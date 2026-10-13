@@ -218,6 +218,28 @@ export function buildVehicleMesh(mesh,{x,y=0,z,angle=0,color='#e99a4b',police=fa
  return mesh;
 }
 
+// Lightweight real 3D rotorcraft patrols the coastline during active pursuit.
+// It is ambient set dressing only: no invented player damage or remote game state.
+export function buildHelicopterMesh(mesh,{x,y,z,t=0}){
+ const body='#25324a',glass='#5cc6e4';
+ mesh.box(x,y,z,2.8,1.15,5,body);
+ mesh.box(x,y+.55,z+1.05,2.0,.57,1.4,glass);
+ mesh.box(x,y+.18,z-3.7,.48,.45,4.6,body);
+ mesh.box(x,y+.3,z-5.65,1.7,.2,.32,'#f7bd77');
+ for(const side of [-1,1]){
+  mesh.beam([x+side*1,y-.6,z-1.4],[x+side*1,y-.6,z+2.0],.10,'#b7c5d2');
+  mesh.beam([x+side*.85,y-.45,z-.8],[x+side*1,y-.6,z-.8],.10,'#b7c5d2');
+ }
+ mesh.beam([x,y+.75,z],[x,y+1.35,z],.12,'#a0bbd5');
+ const spin=t*11;
+ for(let i=0;i<4;i++){
+  const a=spin+i*Math.PI/2;
+  mesh.beam([x,y+1.35,z],[x+Math.cos(a)*5.3,y+1.35,z+Math.sin(a)*5.3],.16,'#d8e6f1');
+ }
+ mesh.beam([x,y+.2,z-5.65],[x+1.35*Math.cos(spin),y+.2+1.35*Math.sin(spin),z-5.65],.11,'#caeaf9');
+ return mesh;
+}
+
 function makeShader(gl,type,source){const o=gl.createShader(type);gl.shaderSource(o,source);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(o));return o;}
 // Keeps a third-person camera from passing through opaque building geometry.
 // Segment-vs-expanded-AABB (including height) prevents unwanted building interiors
@@ -371,6 +393,28 @@ export class WebGLWorld{
  for(const [xx,zz,height,color] of [[-43,22,17,'#fb68bb'],[45,-44,20,'#4be9eb'],[-74,-58,13,'#f1ce77']]){
   b.box(xx,height,zz,5,.27,.6,color);b.box(xx,height-1,zz,4.3,1.2,.35,color);
  }
+ // Far-shore skyline: varied tower silhouettes and tiny illuminated window grids.
+ // Geometry lives beyond the playable harbor so collision rules stay untouched.
+ for(let i=0;i<15;i++){
+  const x=-119+i*17;if(Math.abs(x)<24)continue;
+  const z=131+(i%3)*3,h=24+(i*19%37),w=8+(i%3)*2.4;
+  b.box(x,-.2,z,w,h,10,i%3===0?'#273b62':i%3===1?'#3a4b76':'#405779');
+  b.box(x,h-.2,z,w+.8,.18,11,'#76c5e5');
+  for(let row=3;row<h-2;row+=5)for(let col=-1;col<=1;col++){
+   const cx=x+col*(w/3.8),lit=(i+row+col)%4!==0;
+   b.box(cx,row,z-5.03,.92,1.9,.05,lit?'#eed8a4':'#275078');
+  }
+  if(i%4===0)b.box(x,h,z,.18,7,.18,'#e6a6d9');
+ }
+ // Actual deck, mast and triangular sails over navigable water, not screenshots.
+ for(const [bx,bz,scale] of [[-39,92,1],[43,105,.7],[91,91,1.05],[-97,109,.73]]){
+  const deck=-.09,h=8*scale;
+  b.box(bx,deck,bz,4.3*scale,.55,10*scale,'#e6e7ed');
+  b.box(bx,deck+.54,bz-1.5*scale,2.2*scale,1.15,2.3*scale,'#365575');
+  b.beam([bx,deck+.6,bz],[bx,deck+h,bz],.12,'#b8c6d8');
+  b.tri([bx,deck+h-.25,bz],[bx,deck+.85,bz],[bx+4.7*scale,deck+1.1,bz],'#fff0d4');
+  b.tri([bx,deck+h-.25,bz],[bx-3*scale,deck+1.0,bz],[bx,deck+.85,bz],'#ff9bb9');
+ }
  // Alpine/woodland. Low-poly evergreen firs, peaks.
  for(let i=0;i<65;i++){const x=47+random()*76,z=-113+random()*106;if(Math.abs(x-64)<9)continue;
   b.box(x,0,z,.8,3,.8,'#805a47');b.roof(x,3,z,3.2,7,'#157767');b.roof(x,5,z,2.4,5,'#20a08a');
@@ -420,6 +464,21 @@ export class WebGLWorld{
   // All avatar limbs, face, cosmetics and skateboard are actual animated 3D meshes.
   if(player.vehicle==='foot'||player.vehicle==='skate')buildCharacterMesh(dynamic,player,t);
   else buildVehicleMesh(dynamic,{x:player.x,y:player.y,z:player.z,angle:player.angle||0,color:player.vehicle==='car'?'#fa5770':'#f9ac3c'});
+ // A moving neon skateboard trail at real wheel height. Speed determines
+ // segment length; it vanishes when stationary or in the car.
+ if(player.vehicle==='skate'&&Math.hypot(player.vx||0,player.vz||0)>3){
+  const speed=Math.hypot(player.vx,player.vz),s=Math.sin(player.angle||0),c=Math.cos(player.angle||0);
+  for(const side of [-1,1])for(let j=0;j<3;j++){
+   const offset=side*.33,back=(j*.55+.3+Math.sin(t*15+j)*.08),len=Math.min(3,speed*.17)*(1-j*.22);
+   const x0=px+offset*c-s*back,z0=pz-offset*s-c*back;
+   dynamic.beam([x0,.095,z0],[x0-s*len,.035,z0-c*len],.048-j*.008,side>0?'#3dfbbc':'#8cfafa');
+  }
+ }
+ // Patrol helicopter becomes visible above the harbor on approach to the coast.
+ if(player.chaseActive&&player.z>-18){
+  const patrolX=-24+Math.sin(t*.22)*19,patrolZ=69+Math.cos(t*.19)*11;
+  if(Math.hypot(patrolX-px,patrolZ-pz)<125)buildHelicopterMesh(dynamic,{x:patrolX,y:26+Math.sin(t*.45)*1.5,z:patrolZ,t});
+ }
  // Road traffic and chase police.
  for(const [i,v] of this.traffic.slice(0,Math.round(this.traffic.length*(config.trafficDensity??.65))).entries()){
   if(v.occupied)continue; // A stolen car is rendered once as the driver's 3D vehicle.
@@ -477,10 +536,19 @@ export function cameraRelativeInput(x,z,yaw){
  const c=Math.cos(yaw),a=Math.sin(yaw);
  return {x:-x*c+z*a,z:x*a+z*c};
 }
+// Rotate a right-pointing HUD arrow into the true on-screen waypoint direction.
+// Uses the same signed screen-right basis as cameraRelativeInput and lookAt.
+export function waypointArrowRotation(dx,dz,yaw){
+ const right=-dx*Math.cos(yaw)+dz*Math.sin(yaw);
+ const forward=dx*Math.sin(yaw)+dz*Math.cos(yaw);
+ return Math.atan2(right,forward)-Math.PI/2;
+}
 export function updatePlayer(p,controls,world,dt){dt=Math.min(dt,.05);p.crashCooldown=Math.max(0,p.crashCooldown-dt);
  // Visual stunt timer belongs to the same fixed-step simulation as movement.
  p.trickTimer=Math.max(0,(p.trickTimer||0)-dt);
- p.heat=Math.max(0,p.heat-dt*(p.vehicle==='car'?.012:.055));
+ // The previous decay silently stopped police pursuit during a long harbor run,
+ // even while the active mission still said ESCAPE THE CHASE.
+ p.heat=p.chaseActive?Math.max(.78,p.heat-dt*.012):Math.max(0,p.heat-dt*(p.vehicle==='car'?.012:.055));
  const desiredX=Number(controls.x)||0,desiredZ=Number(controls.z)||0;const inputMag=Math.min(1,Math.hypot(desiredX,desiredZ));
  const dx=inputMag?desiredX/inputMag:0,dz=inputMag?desiredZ/inputMag:0;
  // Responsive arcade speeds in metres/sec. Analog stick deflection scales

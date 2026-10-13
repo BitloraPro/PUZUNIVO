@@ -1,3 +1,11 @@
+## Iteration v0.5.1 — skate-first Harbor Chase and in-engine coastal set dressing (2026-10-13)
+
+- First **new** MegaRush run now starts with Rylee on her skateboard and a genuine active police chase. A 5-second initial crash-damage grace period lets the player accelerate. Existing saved runs preserve their authoritative vehicle/heat/chase data and are **not** reset on upgrade. The harbor remains a traversable world checkpoint, and afterwards collectible progression continues against the unchanged PUZUNIVO backend.
+- Fixed a physics/UI mismatch: previously heat silently decayed to zero during an active chase even while the mission said escape. Pursuit now persists until the player reaches the actual harbor checkpoint; after escape it dissipates normally. Revive grants short immunity and repositions the pursuer for a free respawn.
+- Waypoint arrow now projects onto the **actual signed camera-screen right/forward basis**, matching the screen-left/right touch controls at any camera yaw; chase HUD progress is distance to harbor instead of misleading shard progress.
+- Existing WebGL2 renderer gains *actual triangulated 3D* police patrol helicopter with rotating rotors, marina sailboats, distant illuminated skyline and speed-reactive skateboard trail, plus procedural sunset disk/atmosphere through CSS behind the WebGL geometry. No generated image or screenshot is substituted for game assets; these are low-/mid-poly stylized additions, not photorealistic or AAA art.
+- Automated source/API/physics/mock-WebGL2 tests: **39/39 pass locally**. NO successful device GPU QA, live Apper deploy or installable APK confirmed. Repository hosting and browser-hosting are different things; GitHub source upload does not automatically update the running Termux server.
+
 ## v0.4.3 verified changes (2026-10-13)
 
 - Android lifecycle: WebView `onPause()` dispatches a native-pause event to the already existing MegaRush gameplay loop. Gameplay stops simulating physics and retains the same SQLite-backed user session. `visibilitychange` remains the platform fallback.

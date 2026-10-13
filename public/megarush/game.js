@@ -1,4 +1,4 @@
-import {WebGLWorld,updatePlayer,cameraRelativeInput,trafficPosition,advanceFixedPhysics,HARBOR_FINISH,atHarbor} from './engine.js';
+import {WebGLWorld,updatePlayer,cameraRelativeInput,waypointArrowRotation,trafficPosition,advanceFixedPhysics,HARBOR_FINISH,atHarbor} from './engine.js';
 import {nativeAdsAvailable,rewardedRevive,interstitialBetweenChapters} from './native-monetization.js';
 const $=id=>document.getElementById(id);
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -38,7 +38,9 @@ function fillPanel(){const box=$('panel-content');if(!boot)return;
  }else box.innerHTML=`<p class="muted">${esc(boot.settings.banner)}</p>${boot.announcements.map(a=>`<div class="mini-card">📢 ${esc(a.message)}</div>`).join('')}`;
 }
 async function revive(withAd){if(!player)return;if(withAd){try{const earned=await rewardedRevive();if(!earned){flash('Reward not earned. Free respawn is available.');return}}catch(e){flash('Ad unavailable: '+e.message);return}}
- player.hp=3;player.heat=0;if(!withAd){player.x=0;player.y=0;player.z=0;}player.vx=0;player.vy=0;player.vz=0;session&&menu();flash(withAd?'❤️ Revived after earned ad':'❤️ Free checkpoint respawn');}
+ player.hp=3;player.heat=player.chaseActive?.92:0;player.crashCooldown=5;
+ if(!withAd){player.x=0;player.y=0;player.z=0;player.policeX=-3;player.policeZ=-20;}
+ player.vx=0;player.vy=0;player.vz=0;session&&menu();flash(withAd?'❤️ Revived after earned ad':'❤️ Free checkpoint respawn');}
 async function refresh(){boot=await api('bootstrap');selected=boot.equipped?.character||selected;account();roster();if(activeTab)fillPanel();}
 async function equip(skin){if(!boot.profile){flash('Start a guest session first');return;}try{await api('wardrobe/equip',{character:selected,skin});await refresh();if(player)player.skin=skin;flash('Equipped!')}catch(e){flash(e.message)}}
 async function buy(itemId){if(!boot.profile){flash('Start as guest or log in to unlock outfits.');return;}try{await api('wardrobe/buy',{itemId});await refresh();fillPanel();flash('New cosmetic unlocked!')}catch(e){flash(e.message)}}
@@ -56,10 +58,11 @@ async function start(){
  collectibles=s.pickups.map(p=>({...p,collected:(s.collectedIds||[]).includes(p.id)}));sentPickups=new Set(s.collectedIds||[]);pickupsReceived=(s.collectedIds||[]).length;missionDone=false;
  const savedState=resumed?s.state||{}:{};
  player={x:resumed?s.x:0,y:0,z:resumed?s.z:0,vx:0,vy:0,vz:0,onGround:true,character:selected,skin:boot.equipped?.skin||'default',
-  angle:savedState.angle??0,hp:savedState.hp??3,vehicle:savedState.vehicle??'foot',heat:savedState.heat??0,crashCooldown:0,
-  policeX:savedState.policeX??-12,policeZ:savedState.policeZ??20,moving:false,trickTimer:0,
-  chaseActive:savedState.chaseActive??false,carSlot:savedState.carSlot??-1};
- if(!world)world=new WebGLWorld($('world'));world.generate(boot.level);
+  angle:savedState.angle??0,hp:savedState.hp??3,vehicle:savedState.vehicle??(resumed?'foot':'skate'),
+  heat:savedState.heat??(resumed?0:.92),crashCooldown:resumed?0:5,
+  policeX:savedState.policeX??(resumed?-12:-3),policeZ:savedState.policeZ??(resumed?20:-20),moving:false,trickTimer:0,
+  chaseActive:savedState.chaseActive??!resumed,carSlot:savedState.carSlot??-1};
+ if(!world)world=new WebGLWorld($('world'));world.generate(boot.level);if(!resumed)world.cameraYaw=0;
  if(resumed){world.cameraYaw=savedState.cameraYaw??0;
   if(player.vehicle==='car'&&player.carSlot>=0&&world.traffic[player.carSlot])world.traffic[player.carSlot].occupied=true;
  }
@@ -67,8 +70,8 @@ async function start(){
  $('panel').classList.add('hidden');$('hud').classList.remove('hidden');$('touch').classList.remove('hidden');$('mission').classList.remove('hidden');
  if(!liveOpsTimer)liveOpsTimer=setInterval(async()=>{if(!running)return;try{const update=await api('bootstrap');const previous=boot.settings.banner;boot.settings=update.settings;boot.announcements=update.announcements;if(previous!==boot.settings.banner)$('notice').textContent=boot.settings.banner}catch{}},25000);
  $('where').textContent=`Ch ${s.mission.chapter} · ${s.mission.chapterTitle}`;$('level').textContent=s.level;
- $('mission-title').textContent=`Collect ${s.mission.targetCollectibles} light shards`;$('hearts').textContent=player.hp;
- startAt=performance.now();last=startAt;gameTime=0;physicsCarry=0;frameSamples=0;fpsElapsed=0;running=true;if(!frameId)frameId=requestAnimationFrame(loop);flash(resumed?'Adventure restored. Your collected shards are saved.':'Welcome to MegaRush! Follow the glowing collectibles.');
+ $('mission-title').textContent=player.chaseActive?'ESCAPE THE CHASE':`Collect ${s.mission.targetCollectibles} light shards`;$('hearts').textContent=player.hp;
+ startAt=performance.now();last=startAt;gameTime=0;physicsCarry=0;frameSamples=0;fpsElapsed=0;running=true;if(!frameId)frameId=requestAnimationFrame(loop);flash(resumed?'Adventure restored. Your collected shards are saved.':'🚨 HARBOR CHASE! Skate down the main boulevard to the glowing harbor gate.');
  }catch(e){flash(e.message);showPanel();}finally{btns.play.disabled=false;btns.play.textContent='▶ Start Adventure'}}
 function pressAction(action){if(!running||!player)return;
  if(action==='ride'){
@@ -189,16 +192,21 @@ function loop(timestamp){if(!running||!player||!world){frameId=0;return;}frameId
  $('orbs').textContent=pickupsReceived+'/'+boot.mission.targetCollectibles;$('hearts').textContent=player.hp;$('heat').textContent=player.heat>.2?'CHASE':'CLEAR';
  $('speed').textContent=Math.round(Math.hypot(player.vx,player.vz)*3.6);
  $('prompt').classList.toggle('pursuit',player.heat>.2);
- const ratio=Math.min(1,pickupsReceived/boot.mission.targetCollectibles);$('mission-fill').style.width=Math.round(ratio*100)+'%';$('mission-progress').textContent=pickupsReceived+' / '+boot.mission.targetCollectibles+' shards';btns.finish.disabled=ratio<1;
+ const ratio=Math.min(1,pickupsReceived/boot.mission.targetCollectibles);
+ const chaseDistance=Math.hypot(player.x-HARBOR_FINISH.x,player.z-HARBOR_FINISH.z);
+ // A harbor chase must display harbor progress, not a misleading full shard bar.
+ const chaseRatio=Math.max(0,Math.min(1,1-chaseDistance/112));
+ $('mission-fill').style.width=Math.round((player.chaseActive?chaseRatio:ratio)*100)+'%';
+ $('mission-progress').textContent=pickupsReceived+' / '+boot.mission.targetCollectibles+' shards';btns.finish.disabled=ratio<1;
  if(gameTime-miniLast>.1){drawMiniMap();miniLast=gameTime;}
  const closest=player.chaseActive?HARBOR_FINISH:collectibles.filter(p=>!p.collected).sort((a,b)=>Math.hypot(a.x-player.x,a.z-player.z)-Math.hypot(b.x-player.x,b.z-player.z))[0];
  if(closest){const dx=closest.x-player.x,dz=closest.z-player.z;const distance=Math.round(Math.hypot(dx,dz));
-  const relativeAngle=Math.atan2(dx,dz)-world.cameraYaw;
+  const arrowRotation=waypointArrowRotation(dx,dz,world.cameraYaw);
   $('waypoint').textContent=player.chaseActive?`◆ REACH HARBOR · ${distance}m`:`✦ NEXT SHARD · ${distance}m`;
-  $('waypoint-arrow').style.transform=`rotate(${relativeAngle}rad)`;
+  $('waypoint-arrow').style.transform=`rotate(${arrowRotation}rad)`;
  }else{$('waypoint').textContent='✦ ALL SHARDS FOUND';$('waypoint-arrow').style.transform='none';}
  if(player.chaseActive){$('mission-title').textContent='ESCAPE THE CHASE';$('mission-progress').textContent=`Reach the Harbor · ${Math.round(Math.hypot(player.x-HARBOR_FINISH.x,player.z-HARBOR_FINISH.z))}m`;
-  $('prompt').textContent='🚨 POLICE PURSUIT — Follow the harbor waypoint';btns.finish.disabled=true;
+  $('prompt').textContent='🚨 ESCAPE THE CHASE — Skate the boulevard • Harbor checkpoint ahead';btns.finish.disabled=true;
  }else{$('mission-title').textContent=`Collect ${boot.mission.targetCollectibles} light shards`;
   $('mission-progress').textContent=pickupsReceived+' / '+boot.mission.targetCollectibles+' shards';btns.finish.disabled=ratio<1;
   $('prompt').textContent=`✦ Find glowing light shards • ${player.vehicle.toUpperCase()} • ${weather.weather.toUpperCase()}`;

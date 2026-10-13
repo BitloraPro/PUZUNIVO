@@ -1,8 +1,12 @@
 # PUZUNIVO — Independent Brain Games Platform
 
-**Status (13 October 2026, v0.5):** Original four PUZUNIVO puzzle games and the fifth MegaRush WebGL2 landscape **vertical slice** are in this source tree. 37 Node/API/physics tests pass locally. Android native wrapper source and a guarded APK build workflow are included, **but there is no verified built APK, live server deployment, actual Android GPU test or cinematic-quality production assets yet**. The separately hosted Apper application has not been updated by this GitHub code push. The game depends on a compatible, owner-deployed HTTPS Node 22 backend; a debug APK pointing to the wrong site is intentionally blocked by CI.
+**Status (13 October 2026, v0.5.1):** Original four PUZUNIVO puzzle games and the fifth MegaRush WebGL2 landscape **vertical slice** are in this source tree. 39 Node/API/physics tests pass locally. Android native wrapper source and a guarded APK build workflow are included, **but there is no verified built APK, live server deployment, actual Android GPU test or cinematic-quality production assets yet**. The separately hosted Apper application has not been updated by this GitHub code push. The game depends on a compatible, owner-deployed HTTPS Node 22 backend; a debug APK pointing to the wrong site is intentionally blocked by CI.
 
 PUZUNIVO is an original puzzle platform, independent from Bitlora/Bitlora Pro. Includes an English-language mobile-friendly web application plus separate web administration dashboard. No gambling, cash wallets, KYC, crypto rewards or fabricated live business metrics.
+
+## MegaRush gameplay v0.5.1 — skate-first harbor pursuit
+
+New runs begin with a skateboarding Harbor Chase, a pursuer whose heat remains active until reaching the actual waterfront, and an accurate distance/progress waypoint. Camera-to-screen arrow projection was fixed. The existing WebGL2 renderer adds geometry-based helicopter patrol, offshore sailboats, illuminated far skyline and a wheel-level neon skate trail; CSS sky gains a procedural sunset disk. **This is still a stylized low-/mid-poly playtest, not the cinematic image or a finished Android APK.** Previously saved runs, four puzzle games, and the shared Admin are preserved.
 
 ## MegaRush gameplay v0.5 mobile playtest improvements
 

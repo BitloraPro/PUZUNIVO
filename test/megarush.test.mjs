@@ -181,7 +181,7 @@ test('Original 3D world generation and frame rendering execute against a minimal
   const canvas={getContext:(name)=>name==='webgl2'?gl:null,clientWidth:960,clientHeight:540,width:0,height:0};
   const world=new WebGLWorld(canvas);world.generate(1);assert.ok(world.staticCount>500);
   assert.equal(world.traffic.length,14);assert.equal(world.walkers.length,32);
-  const player={x:0,y:0,z:0,angle:0,vx:0,vy:0,moving:true,character:'rylee',skin:'default',vehicle:'skate',heat:.9,policeX:-8,policeZ:8,hp:3,crashCooldown:0};
+  const player={x:0,y:0,z:0,angle:0,vx:0,vy:0,moving:true,character:'rylee',skin:'default',vehicle:'skate',heat:.9,chaseActive:true,policeX:-8,policeZ:8,hp:3,crashCooldown:0};
   const out=world.draw(player,{dayCycleMinutes:12,weather:'clear',trafficDensity:.7,pedestrianDensity:.5},[{x:8,z:0,collected:false}],1);
   assert.equal(out.weather,'clear');assert.ok(canvas.width>0&&canvas.height>0);
   assert.ok(world.dynamicVbo&&world.staticVertices.length>1000);
@@ -429,4 +429,34 @@ test('Closer third-person phone camera, faster board and proportional analog ste
  const css=readFileSync(new URL('../public/megarush/game.css',import.meta.url),'utf8');
  assert.match(css,/v0\.5: compact unobstructed gameplay view/);
  assert.match(source,/Palm silhouettes on the walkable boulevard/);
+});
+
+test('Harbor skate pursuit stays physically active until the actual waterfront finish',()=>{
+ const world={weather:'clear',collide:()=>null,elevation:()=>0,traffic:[],t:0};
+ const p={x:0,y:0,z:0,vx:0,vy:0,vz:0,angle:0,onGround:true,vehicle:'skate',chaseActive:true,heat:.9,hp:3,crashCooldown:8,policeX:0,policeZ:-20};
+ for(let i=0;i<60*9;i++){world.t=i/60;updatePlayer(p,{x:0,z:1,sprint:false},world,1/60)}
+ assert.ok(p.z>60,'skate chase covers significant road distance');
+ assert.ok(p.heat>=.78,'pursuit heat cannot silently decay while Harbor Chase is active');
+ assert.ok(p.policeZ>-20,'the police car actually moves, not a decorative UI alert');
+ p.chaseActive=false;const oldHeat=p.heat;
+ for(let i=0;i<60;i++)updatePlayer(p,{x:0,z:0},world,1/60);
+ assert.ok(p.heat<oldHeat,'heat decays normally after harbor escape');
+ const source=readFileSync(new URL('../public/megarush/game.js',import.meta.url),'utf8');
+ assert.match(source,/chaseActive:savedState\.chaseActive\?\?!resumed/,'first-run chase starts on skateboard and persists on restore');
+ assert.match(source,/player\.chaseActive\?chaseRatio:ratio/,'HUD meter follows current chase objective');
+});
+
+test('World-space waypoints map to correct screen-side arrows at all camera orbits', async()=>{
+ const {waypointArrowRotation,buildHelicopterMesh}=await import('../public/megarush/engine.js');
+ const near=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)))<1e-8;
+ assert.ok(near(waypointArrowRotation(0,10,0),-Math.PI/2),'in front should point up');
+ assert.ok(near(waypointArrowRotation(-10,0,0),0),'world negative X is screen right for rear-facing camera');
+ assert.ok(near(waypointArrowRotation(10,0,0),Math.PI),'world positive X is screen left');
+ assert.ok(near(waypointArrowRotation(0,10,Math.PI/2),0),'after 90° orbit world +Z is screen right');
+ const helicopter=new MeshBuilder();buildHelicopterMesh(helicopter,{x:-22,y:26,z:70,t:2.4});
+ assert.ok(helicopter.vertices.length>850,'rotorcraft is real triangulated 3D, not a billboard image');
+ for(let i=0;i<helicopter.vertices.length;i+=9){
+  assert.ok(helicopter.vertices.slice(i,i+9).every(Number.isFinite));
+  assert.ok(Math.abs(Math.hypot(...helicopter.vertices.slice(i+3,i+6))-1)<.003);
+ }
 });

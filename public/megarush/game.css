@@ -82,3 +82,16 @@ body:has(#hud:not(.hidden)) .touch .actionpad .sprint{background:#0c493ed9;borde
 #world[data-sky="sunset"],#world:not([data-sky]){background:linear-gradient(180deg,#234f91 0%,#647cb0 23%,#c28a91 49%,#f5b685 73%,#f5d5a2 100%)}
 @media(orientation:landscape) and (max-height:530px){body:has(#hud:not(.hidden)) .hud-cluster{max-width:calc(100% - 225px)}body:has(#hud:not(.hidden)) .hud-chip{font-size:9px;padding:4px 6px}body:has(#hud:not(.hidden)) .objective{top:29px;font-size:10px;min-width:0;max-width:38vw}body:has(#hud:not(.hidden)) .waypoint{top:65px;font-size:9px}body:has(#hud:not(.hidden)) .minimap{width:90px;height:90px}body:has(#hud:not(.hidden)) .speedometer{right:calc(19vw + 6px)}}
 @media(orientation:landscape) and (max-width:760px){body:has(#hud:not(.hidden)) .hud-cluster{max-width:calc(100% - 175px)}body:has(#hud:not(.hidden)) #fps{display:none}body:has(#hud:not(.hidden)) .hud-chip{font-size:8px;padding:3px 4px}body:has(#hud:not(.hidden)) .objective{max-width:39vw;font-size:9px}body:has(#hud:not(.hidden)) .waypoint{max-width:38vw}body:has(#hud:not(.hidden)) .minimap{width:76px;height:76px}body:has(#hud:not(.hidden)) .speedometer{display:none}}
+
+/* v0.5.1: procedural sunset atmosphere behind actual WebGL2 city geometry. */
+#world[data-sky="sunset"],#world:not([data-sky]){
+ background:
+  radial-gradient(circle at 82% 30%,#fff9da 0%,#ffe9b9 2.2%,#ffb67f 5%,#ee9a8960 13%,transparent 29%),
+  radial-gradient(ellipse at 73% 77%,#f7bb8a99,transparent 42%),
+  linear-gradient(180deg,#172c69 0%,#445d9c 26%,#9c7ba6 44%,#e5a185 65%,#f2bd87 86%,#ba7488 100%);
+}
+#world[data-sky="night"]{
+ background:radial-gradient(ellipse at 76% 67%,#b36c9559,transparent 38%),linear-gradient(180deg,#050d2d,#162959 48%,#583a6a 75%,#b85b83);
+}
+body:has(#hud:not(.hidden)) .objective.pursuit{border-left-color:#f84b65;background:#4c1426e3;box-shadow:0 0 14px #ff346d33}
+body:has(#hud:not(.hidden)) .chase-indicator:has(#heat){border-color:#ff53727a}
