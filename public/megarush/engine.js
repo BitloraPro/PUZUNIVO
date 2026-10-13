@@ -250,7 +250,7 @@ export class WebGLWorld{
   gl.bindVertexArray(vao);gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
   for(let i=0;i<3;i++){const loc=gl.getAttribLocation(prog,['aPos','aNormal','aColor'][i]);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,3,gl.FLOAT,false,36,i*12)}
  }
- gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);this.camera=[0,12,-22];this.targets=[0,1,0];this.cameraYaw=0;this.cameraPitch=.08;this.lastCameraTime=null;this.staticVertices=new Float32Array(0);this.staticCount=0;this.scene=[];this.obstacles=[];this.ramps=[];this.collectibles=[];this.traffic=[];this.walkers=[];this.t=0;this.timeOfDay=0.4;this.renderScale=1;this.contextLost=false;
+ gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);this.camera=[0,5,-8];this.targets=[0,1,0];this.cameraYaw=0;this.cameraPitch=.08;this.lastCameraTime=null;this.staticVertices=new Float32Array(0);this.staticCount=0;this.scene=[];this.obstacles=[];this.ramps=[];this.collectibles=[];this.traffic=[];this.walkers=[];this.t=0;this.timeOfDay=0.4;this.renderScale=1;this.contextLost=false;
  this.onResize=()=>this.resize();window.addEventListener('resize',this.onResize);this.resize();}
  dispose(){window.removeEventListener?.('resize',this.onResize);if(this.contextLost)return;const gl=this.gl;for(const obj of [this.vbo,this.dynamicVbo])gl.deleteBuffer?.(obj);for(const vao of [this.vao,this.dynamicVAO])gl.deleteVertexArray?.(vao);gl.deleteProgram?.(this.program);}
  setRenderScale(scale){this.renderScale=clamp(Number(scale)||1,.62,1);this.resize();return this.renderScale;}
@@ -264,6 +264,30 @@ export class WebGLWorld{
   b.box(x-8,-.14,0,2,.1,190,'#7c8296');b.box(x+8,-.14,0,2,.1,190,'#7c8296');
  }
  b.box(0,-.11,-30,185,.13,12,'#25334e');for(let x=-85;x<90;x+=19)b.box(x,-.02,-30,9,.017,.14,'#e2deac');
+ // Harbor Boulevard: in-mesh reflective road highlights and lane edge lights.
+ // These are ordinary triangles with finite vertices, not flat screenshot art.
+ for(const lane of [-32,0,32]){
+  for(const side of [-1,1]){
+   b.box(lane+side*6.4,.012,-5,.12,.018,158,side===1?'#34b8df':'#b768cb');
+  }
+  for(let z=-87;z<68;z+=5.4){
+   const highlight=z%2>0?'#375875':'#41617d';
+   b.box(lane-2.25,.013,z,.13,.02,2.45,highlight);
+   b.box(lane+2.25,.013,z,.13,.02,2.1,'#37516b');
+  }
+ }
+ // Palm silhouettes on the walkable boulevard and on the harbor coast.
+ // Fronds have curved articulated arms; low segment count preserves FPS.
+ for(const sidewalk of [-1,1])for(let z=-78;z<=60;z+=21){
+  const px=sidewalk*10.6,pz=z+(sidewalk===1?4:0),height=7.4+(Math.abs(z)%4)*.45;
+  b.cylinder([px,0,pz],[px+sidewalk*.32,height,pz],.28,'#745447',6);
+  for(let frond=0;frond<7;frond++){
+   const angle=frond*TAU/7;const fx=px+sidewalk*.32+Math.cos(angle)*3.8,fz=pz+Math.sin(angle)*3.8;
+   b.beam([px+sidewalk*.32,height,pz],[fx,height-.75,fz],.12,frond%2?'#28836b':'#2d9b78');
+   b.beam([fx,height-.75,fz],[fx+Math.cos(angle)*1.25,height-1.95,fz+Math.sin(angle)*1.25],.085,'#216e62');
+  }
+  b.box(px,.02,pz,1.1,.09,1.1,'#356575');
+ }
  // Overhead parking lot, rooftops, arcade ramps and neon alley.
  b.box(-59,.1,-12,20,5,22,'#3a5578');b.box(-59,5.1,-12,22,.42,24,'#6684a7');
  for(let i=0;i<5;i++){b.box(-59,5.4,-23+i*5,21,.18,.2,'#c0cad3')}
@@ -370,9 +394,11 @@ export class WebGLWorld{
  if(this.canvas.dataset)this.canvas.dataset.sky=night>.3?'night':weather==='rain'?'rain':weather==='fog'?'fog':'sunset';
  gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
  const yaw=this.cameraYaw;const forward=[Math.sin(yaw),Math.cos(yaw)];
- const range=player.vehicle==='car'?18:13.8;
- const target=[player.x,player.y+1.8,player.z];
- const unoccluded=[player.x-forward[0]*range,player.y+7.4+range*Math.sin(this.cameraPitch),player.z-forward[1]*range];
+ // The old 13.8m chase camera made Rylee tiny on a phone. Keep a visible
+ // 3D hero silhouette, but give faster cars enough forward road preview.
+ const range=player.vehicle==='car'?11.6:7.9;
+ const target=[player.x,player.y+1.48,player.z];
+ const unoccluded=[player.x-forward[0]*range,player.y+4.65+range*Math.sin(this.cameraPitch),player.z-forward[1]*range];
  const desired=cameraSafePosition(target,unoccluded,this.obstacles);
  // Avoid smoothing through a wall: interpolate, then recheck the interpolated segment.
  const cameraDt=this.lastCameraTime===null?1/60:Math.max(0,t-this.lastCameraTime);
@@ -381,7 +407,7 @@ export class WebGLWorld{
  const eased=this.camera.map((v,i)=>lerp(v,desired[i],follow));
  const visible=cameraSafePosition(target,eased,this.obstacles);
  this.camera=visible;
- gl.uniformMatrix4fv(this.uProj,false,matPerspective(69*Math.PI/180,this.canvas.width/this.canvas.height,.1,310));gl.uniformMatrix4fv(this.uView,false,lookAt(this.camera,target));
+ gl.uniformMatrix4fv(this.uProj,false,matPerspective(62*Math.PI/180,this.canvas.width/this.canvas.height,.1,310));gl.uniformMatrix4fv(this.uView,false,lookAt(this.camera,target));
  const sunAngle=this.timeOfDay*TAU;
  // Sunrise/sunset warmth moves as the in-world clock advances, night uses a dim cool key.
  const daylight=Math.max(0,Math.cos(sunAngle));
@@ -444,10 +470,12 @@ export function advanceFixedPhysics(carry,elapsed,onStep,step=1/60,maxSteps=6){
  }
  return {carry:Math.max(0,pending),steps};
 }
-// Camera-relative controls keep W/forward toward the current view, including after orbit.
+// Correct screen-space movement for our right-handed lookAt matrix.
+// With the camera behind the hero (negative world Z), screen RIGHT is
+// negative world X. The previous mapping inverted LEFT/RIGHT on Android.
 export function cameraRelativeInput(x,z,yaw){
  const c=Math.cos(yaw),a=Math.sin(yaw);
- return {x:x*c+z*a,z:z*c-x*a};
+ return {x:-x*c+z*a,z:x*a+z*c};
 }
 export function updatePlayer(p,controls,world,dt){dt=Math.min(dt,.05);p.crashCooldown=Math.max(0,p.crashCooldown-dt);
  // Visual stunt timer belongs to the same fixed-step simulation as movement.
@@ -455,11 +483,13 @@ export function updatePlayer(p,controls,world,dt){dt=Math.min(dt,.05);p.crashCoo
  p.heat=Math.max(0,p.heat-dt*(p.vehicle==='car'?.012:.055));
  const desiredX=Number(controls.x)||0,desiredZ=Number(controls.z)||0;const inputMag=Math.min(1,Math.hypot(desiredX,desiredZ));
  const dx=inputMag?desiredX/inputMag:0,dz=inputMag?desiredZ/inputMag:0;
- const speed=(p.vehicle==='foot'?5.4:p.vehicle==='skate'?7.5:p.vehicle==='swim'?3.3:12)*(controls.sprint&&p.vehicle!=='car'&&p.vehicle!=='swim'?1.42:1);
+ // Responsive arcade speeds in metres/sec. Analog stick deflection scales
+ // pace continuously; keyboard input retains full-speed direction.
+ const speed=(p.vehicle==='foot'?8.0:p.vehicle==='skate'?13.8:p.vehicle==='swim'?3.5:21.5)*(controls.sprint&&p.vehicle!=='car'&&p.vehicle!=='swim'?1.5:1);
  p.moving=inputMag>.08;
- if(p.moving){const targetAngle=Math.atan2(dx,dz),angDiff=Math.atan2(Math.sin(targetAngle-p.angle),Math.cos(targetAngle-p.angle));p.angle+=clamp(angDiff,-4*dt,4*dt)}
- const friction=world.weather==='rain'?.7:1;const accel=p.vehicle==='car'?2.7:4.4;
- p.vx=lerp(p.vx,dx*speed*friction,Math.min(1,dt*accel));p.vz=lerp(p.vz,dz*speed*friction,Math.min(1,dt*accel));
+ if(p.moving){const targetAngle=Math.atan2(dx,dz),angDiff=Math.atan2(Math.sin(targetAngle-p.angle),Math.cos(targetAngle-p.angle));p.angle+=clamp(angDiff,-7.5*dt,7.5*dt)}
+ const friction=world.weather==='rain'?.78:1;const accel=p.vehicle==='car'?4.0:8.3;
+ p.vx=lerp(p.vx,dx*speed*inputMag*friction,Math.min(1,dt*accel));p.vz=lerp(p.vz,dz*speed*inputMag*friction,Math.min(1,dt*accel));
  const nx=clamp(p.x+p.vx*dt,-120,120),nz=clamp(p.z+p.vz*dt,-118,121);
  const building=world.collide(nx,nz,p.y);
  const shoreline=p.vehicle==='car'&&nz>64&&!onHarborRoad(nx,nz);

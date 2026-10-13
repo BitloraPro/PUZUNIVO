@@ -41,7 +41,7 @@ test('MegaRush physics uses realistic movement caps and water changes vehicle mo
  const p={x:0,y:0,z:0,vx:0,vy:0,vz:0,angle:0,onGround:true,vehicle:'foot',heat:0,hp:3,crashCooldown:0};
  const original={x:0,z:1,jump:false,dive:false,climb:false};
  for(let i=0;i<40;i++)updatePlayer(p,original,world,.025);
- assert.ok(p.z>2 && p.z<5.4,'foot speed is balanced, not hyper-fast');
+ assert.ok(p.z>5.5 && p.z<8.1,'foot movement is responsive but remains speed-capped');
  p.x=20;p.z=66.5;updatePlayer(p,{...original,z:0},world,.02);
  assert.equal(p.vehicle,'swim');
 });
@@ -191,10 +191,13 @@ test('Original 3D world generation and frame rendering execute against a minimal
 
 test('Camera-relative movement tracks rotated viewpoint without direction inversion',()=>{
  assert.deepEqual(cameraRelativeInput(0,1,0),{x:0,z:1});
+ const screenRight=cameraRelativeInput(1,0,0);
+ const screenLeft=cameraRelativeInput(-1,0,0);
+ assert.ok(screenRight.x<-.999&&screenLeft.x>.999,'analog left and right agree with screen coordinates');
  const r=cameraRelativeInput(0,1,Math.PI/2);
  assert.ok(Math.abs(r.x-1)<1e-10&&Math.abs(r.z)<1e-10);
  const side=cameraRelativeInput(1,0,Math.PI/2);
- assert.ok(Math.abs(side.x)<1e-10&&Math.abs(side.z+1)<1e-10);
+ assert.ok(Math.abs(side.x)<1e-10&&Math.abs(side.z-1)<1e-10);
 });
 
 test('Every server collectible is unique, within walkable city corridors, and survives live-ops density changes',()=>{
@@ -408,4 +411,22 @@ test('Third-person camera follows by elapsed time rather than render FPS',()=>{
  assert.ok(Math.abs((1-a)-(1-b)*(1-b))<1e-12,'two 60 Hz frames match one 30 Hz frame');
  assert.equal(cameraFollowFactor(0),0);
  assert.ok(cameraFollowFactor(20)<1,'backgrounded frames cannot teleport the camera');
+});
+
+test('Closer third-person phone camera, faster board and proportional analog steering are shipped together',()=>{
+ const source=readFileSync(new URL('../public/megarush/engine.js',import.meta.url),'utf8');
+ assert.match(source,/vehicle==='car'\?11\.6:7\.9/);
+ assert.match(source,/matPerspective\(62\*Math\.PI\/180/);
+ assert.match(source,/vehicle==='skate'\?13\.8/);
+ const world={weather:'clear',collide:()=>false,elevation:()=>0,traffic:[]};
+ const player=()=>({x:0,y:0,z:0,vx:0,vy:0,vz:0,angle:0,onGround:true,vehicle:'skate',heat:0,hp:3,crashCooldown:0});
+ const half=player(),full=player();
+ for(let i=0;i<50;i++){
+  updatePlayer(half,{x:0,z:.5},world,.02);
+  updatePlayer(full,{x:0,z:1},world,.02);
+ }
+ assert.ok(half.z<full.z*.63&&half.z>full.z*.35,'analog stick deflection controls pace, not just heading');
+ const css=readFileSync(new URL('../public/megarush/game.css',import.meta.url),'utf8');
+ assert.match(css,/v0\.5: compact unobstructed gameplay view/);
+ assert.match(source,/Palm silhouettes on the walkable boulevard/);
 });

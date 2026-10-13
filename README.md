@@ -1,8 +1,14 @@
 # PUZUNIVO — Independent Brain Games Platform
 
-**Status (13 October 2026):** Original four PUZUNIVO puzzle games and the fifth MegaRush WebGL2 landscape **vertical slice** are in this source tree. 36 Node/API/physics tests pass locally. Android native wrapper source and a guarded APK build workflow are included, **but there is no verified built APK, live server deployment, actual Android GPU test or cinematic-quality production assets yet**. The separately hosted Apper application has not been updated by this GitHub code push. The game depends on a compatible, owner-deployed HTTPS Node 22 backend; a debug APK pointing to the wrong site is intentionally blocked by CI.
+**Status (13 October 2026, v0.5):** Original four PUZUNIVO puzzle games and the fifth MegaRush WebGL2 landscape **vertical slice** are in this source tree. 37 Node/API/physics tests pass locally. Android native wrapper source and a guarded APK build workflow are included, **but there is no verified built APK, live server deployment, actual Android GPU test or cinematic-quality production assets yet**. The separately hosted Apper application has not been updated by this GitHub code push. The game depends on a compatible, owner-deployed HTTPS Node 22 backend; a debug APK pointing to the wrong site is intentionally blocked by CI.
 
 PUZUNIVO is an original puzzle platform, independent from Bitlora/Bitlora Pro. Includes an English-language mobile-friendly web application plus separate web administration dashboard. No gambling, cash wallets, KYC, crypto rewards or fabricated live business metrics.
+
+## MegaRush gameplay v0.5 mobile playtest improvements
+
+The v0.5 update fixes left/right touch movement relative to the actual on-screen camera handedness, reduces the chase-camera distance from 13.8m to 7.9m on foot/skate, increases responsive walking/skating/driving movement and proportional analog control, and adds geometric neon road lights plus palm-frond silhouettes around the harbor. The gameplay HUD no longer carries a wide top menu banner that obscures the sky. These are verifiable source and automated physics changes, **not** a claim of AAA cinematic reference-image visual fidelity or Android GPU qualification.
+
+**Termux after updating:** `git pull --ff-only`, `npm run check`, `npm test`, then restart the existing Node server. Never delete the `data/` directory: it holds the persistent player/admin accounts and game saves. If Git reports local modifications, inspect them instead of forcing a pull.
 
 ## Start on your computer, Termux, or a Node 22 server
 

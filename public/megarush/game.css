@@ -61,3 +61,24 @@ html,body{overscroll-behavior:none;touch-action:manipulation}
 .minimap .mapdot{display:none}
 .minimap .compass{z-index:2;right:50%;transform:translateX(50%);top:1px;background:#0b213ec7;padding:1px 4px;border-radius:4px;font-weight:900}
 .minimap .map-title{font-size:7px;text-shadow:0 1px 3px #000;z-index:2;background:#0b213e99}
+
+/* v0.5: compact unobstructed gameplay view, guided by the approved sunset chase. */
+body:has(#hud:not(.hidden)) .top{left:auto;right:max(10px,env(safe-area-inset-right));top:4px;min-height:0;padding:4px 7px;background:#07162bbd;box-shadow:0 3px 16px #0005;border-radius:10px;gap:4px}
+body:has(#hud:not(.hidden)) .top .brand{font-size:0;gap:0}
+body:has(#hud:not(.hidden)) .top .brand-icon{font-size:15px;padding:3px}
+body:has(#hud:not(.hidden)) .top .brand small{display:none}
+body:has(#hud:not(.hidden)) .topactions button{padding:4px 8px;font-size:11px}
+body:has(#hud:not(.hidden)) .hud{top:8px}
+body:has(#hud:not(.hidden)) .hud-cluster{justify-content:center;max-width:calc(100% - 265px);margin:auto;flex-wrap:nowrap}
+body:has(#hud:not(.hidden)) .hud-chip{white-space:nowrap;font-size:10px;padding:5px 8px;background:#101b30c5}
+body:has(#hud:not(.hidden)) #where{display:none}
+body:has(#hud:not(.hidden)) .minimap{top:5px;width:clamp(85px,10.5vw,128px);height:clamp(85px,10.5vw,128px);border:2px solid #b8eaffb2}
+body:has(#hud:not(.hidden)) .objective{left:50%;top:35px;transform:translateX(-50%);max-width:38vw;width:max-content;min-width:240px;text-align:center;padding:6px 11px;font-size:11px;background:#07172acc}
+body:has(#hud:not(.hidden)) .waypoint{left:50%;top:83px;transform:translateX(-50%);max-width:36vw;border-color:#ffd47691;padding:4px 10px}
+body:has(#hud:not(.hidden)) .mission{bottom:7px;left:50%;width:clamp(165px,20vw,225px);background:#071427d9}
+body:has(#hud:not(.hidden)) .speedometer{bottom:9px;right:calc(19vw + 9px)}
+body:has(#hud:not(.hidden)) .touch .actionpad button{background:#06152cc9;box-shadow:inset 0 1px 0 #ffffff2a,0 5px 17px #0009;border-color:#b8dbe3a3}
+body:has(#hud:not(.hidden)) .touch .actionpad .sprint{background:#0c493ed9;border-color:#52efb0}
+#world[data-sky="sunset"],#world:not([data-sky]){background:linear-gradient(180deg,#234f91 0%,#647cb0 23%,#c28a91 49%,#f5b685 73%,#f5d5a2 100%)}
+@media(orientation:landscape) and (max-height:530px){body:has(#hud:not(.hidden)) .hud-cluster{max-width:calc(100% - 225px)}body:has(#hud:not(.hidden)) .hud-chip{font-size:9px;padding:4px 6px}body:has(#hud:not(.hidden)) .objective{top:29px;font-size:10px;min-width:0;max-width:38vw}body:has(#hud:not(.hidden)) .waypoint{top:65px;font-size:9px}body:has(#hud:not(.hidden)) .minimap{width:90px;height:90px}body:has(#hud:not(.hidden)) .speedometer{right:calc(19vw + 6px)}}
+@media(orientation:landscape) and (max-width:760px){body:has(#hud:not(.hidden)) .hud-cluster{max-width:calc(100% - 175px)}body:has(#hud:not(.hidden)) #fps{display:none}body:has(#hud:not(.hidden)) .hud-chip{font-size:8px;padding:3px 4px}body:has(#hud:not(.hidden)) .objective{max-width:39vw;font-size:9px}body:has(#hud:not(.hidden)) .waypoint{max-width:38vw}body:has(#hud:not(.hidden)) .minimap{width:76px;height:76px}body:has(#hud:not(.hidden)) .speedometer{display:none}}

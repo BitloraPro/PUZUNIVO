@@ -138,3 +138,11 @@ Only update the existing game's `public/megarush/{game.js,game.css,engine.js,ind
 - No Android device is accessible for Adreno/Mali GPU measurements or touch/thermal/battery testing. High-definition textured licensed characters, proper cinematic rendering/animation assets, optimized open-world streaming and production Android ad/billing/signing still require work. The AI-generated marketing reference is not a rendered screenshot from this code.
 
 User requested **a verified installable APK only at final delivery**, not intermediate ZIP/image/source links.
+
+## 13 October 2026 — v0.5 movement and phone readability
+
+- Fixed a real left/right reversal by matching camera-relative input to the `lookAt` camera basis instead of world +X.
+- Reduced default third-person camera range and field of view for a legible Rylee silhouette on mobile, while retaining collision-safe chase camera and wider car preview.
+- Increased foot/skate/car arcade movement acceleration and top speeds; analog displacement now scales actual speed. Server-side impossible-travel check still bounds speed (23m/s plus tolerance).
+- Added procedurally generated 3D palm fronds and road-light highlight meshes; trimmed the gameplay-only top menu/HUD obstruction via CSS, without changing shared PUZUNIVO dashboard or admin.
+- 37 local automated tests pass. Still not comparable to final photoreal cinematic concept art; no hardware GPU QA or signed APK, and Apper publishing is still separate.
