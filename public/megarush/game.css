@@ -95,3 +95,13 @@ body:has(#hud:not(.hidden)) .touch .actionpad .sprint{background:#0c493ed9;borde
 }
 body:has(#hud:not(.hidden)) .objective.pursuit{border-left-color:#f84b65;background:#4c1426e3;box-shadow:0 0 14px #ff346d33}
 body:has(#hud:not(.hidden)) .chase-indicator:has(#heat){border-color:#ff53727a}
+
+/* v0.5.3 — action-first phone framing; muted glass so sunset street remains visible. */
+body:has(#hud:not(.hidden)) .hud-chip{background:#081428c8;border-color:#ffffff2e;box-shadow:0 2px 12px #0006}
+body:has(#hud:not(.hidden)) .objective{background:#061529d9;border-color:#fcce6373;box-shadow:0 6px 20px #0008}
+body:has(#hud:not(.hidden)) .waypoint{background:#0b1a2edb;box-shadow:0 4px 17px #0007}
+body:has(#hud:not(.hidden)) .mission{background:#051123df;border:1px solid #6faac349;box-shadow:0 9px 25px #000a}
+body:has(#hud:not(.hidden)) .touch .joystick{background:radial-gradient(circle,#93d0db24,#071628a8 70%);box-shadow:0 8px 24px #0008,inset 0 0 18px #9ce7fd2c}
+body:has(#hud:not(.hidden)) .touch .actionpad button{border-color:#9ec7d588;box-shadow:inset 0 1px 0 #ffffff25,0 5px 14px #000a}
+body:has(#hud:not(.hidden)) .touch .actionpad .sprint{border:2px solid #4df0b7;box-shadow:inset 0 1px 0 #a2ffce64,0 0 14px #18e6a640}
+#world[data-sky="sunset"]{filter:saturate(1.17) contrast(1.055)}

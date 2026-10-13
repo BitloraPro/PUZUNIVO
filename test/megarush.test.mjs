@@ -498,3 +498,27 @@ test('Diagonal corner collisions slide along walls without entering the solid bu
   assert.equal(Boolean(world.collide(p.x,p.z)),false,'wall sliding remains collision-safe');
  }
 });
+
+test('Sunset harbor material pass has world-anchored neon, water and police lighting',()=>{
+ const src=readFileSync(new URL('../public/megarush/engine.js',import.meta.url),'utf8');
+ for(const key of ['vBase','vWorld','vNormal','uTime','uWet','uPolicePos','uPursuit']){
+  assert.match(src,new RegExp('\\b'+key+'\\b'),`${key} must be in existing WebGL shader pipeline`);
+ }
+ assert.match(src,/water ripple shimmer|Ocean ripple shimmer/i);
+ assert.match(src,/nearPolice=exp\(-distance\(vWorld\.xz,uPolicePos\.xz\)/);
+ assert.match(src,/smoothstep\(0\.65,0\.92,vNormal\.y\)/,'shiny road must only affect upward-facing 3D geometry');
+ assert.match(src,/gl\.uniform1f\(this\.uWet,weather==='rain'\?1:\.18\)/);
+ assert.match(src,/gl\.uniform1f\(this\.uPursuit,player\.heat>\.02\?1:0\)/);
+});
+
+test('Neon shopfronts and harbor promenade preserve driving corridor and original admin',()=>{
+ const src=readFileSync(new URL('../public/megarush/engine.js',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../public/megarush/game.css',import.meta.url),'utf8');
+ assert.match(src,/const shopX=side\*17\.9/);
+ assert.ok(17.9-1.76>6.5,'new shop details remain clear of the central highway');
+ assert.match(src,/Elevated waterside boardwalk/);
+ assert.match(src,/this\.staticVertices=new Float32Array\(b\.vertices\)/);
+ assert.match(css,/v0\.5\.3 — action-first phone framing/);
+ const app=readFileSync(new URL('../logic.mjs',import.meta.url),'utf8');
+ assert.match(app,/number/);assert.match(app,/line/);assert.match(app,/slide/);assert.match(app,/memory/);
+});

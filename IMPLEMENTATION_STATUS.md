@@ -1,3 +1,9 @@
+## Iteration v0.5.3 — volumetric-feel material pass and harbor street dressing (2026-10-13)
+
+- Same WebGL2 render pass now carries world-space vertex coordinates and original material colors into a lightweight fragment shader for animated sea shimmer, damp road highlight, emissive neon signage and actual police-vehicle proximity illumination. This is stylized procedural lighting, **not** ray-traced reflection, photorealistic textures or a copied reference image.
+- New triangulated curbside shops, LED trim, tinted windows, physical lane chevrons, and amber-lit waterfront boardwalk add scene depth. Existing street collision and PUZUNIVO economy/account/admin untouched.
+- Lower-opacity mobile controls and refined gameplay HUD keep the actual 3D street and character visible. Android device GPU quality remains unverified; no signed APK exists.
+
 ## Iteration v0.5.2 — server-authoritative harbor escape (2026-10-13)
 
 - The actual Harbor gate can **complete the zone**: server records `harbor_reached` only for eligible active chase runs, within 9m of the real finish, after time and per-heartbeat travel bounds; unverified/teleported clients receive no checkpoint and cannot claim zone rewards. Original shard collection remains a valid alternative. No fake instant payout.

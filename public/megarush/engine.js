@@ -20,21 +20,45 @@ in vec3 aPos;in vec3 aNormal;in vec3 aColor;
 uniform mat4 uProj;uniform mat4 uView;
 uniform vec3 uSunDir;uniform vec3 uSunColor;
 uniform float uAmbient;uniform float uNight;
-out vec3 vColor;out float vDepth;
+out vec3 vColor;out float vDepth;out vec3 vBase;out vec3 vWorld;out vec3 vNormal;
 void main(){vec4 view=uView*vec4(aPos,1.0);gl_Position=uProj*view;
  vec3 normal=normalize(aNormal);
  float sun=max(dot(normal,normalize(uSunDir)),0.0);
  float bounce=max(dot(normal,normalize(vec3(-0.6,0.35,-0.65))),0.0);
  vec3 irradiance=vec3(uAmbient)+uSunColor*sun*(1.0-uNight*0.18)+vec3(0.11,0.19,0.26)*bounce;
- vColor=aColor*irradiance;vDepth=max(0.0,-view.z);}`;
+ vColor=aColor*irradiance;vBase=aColor;vWorld=aPos;vNormal=normal;vDepth=max(0.0,-view.z);}`;
 const fs=`#version 300 es
 precision mediump float;
-in vec3 vColor;in float vDepth;out vec4 frag;
-uniform vec3 uFog;uniform float uFogDensity;
-void main(){float amt=1.0-exp(-vDepth*vDepth*uFogDensity);
+in vec3 vColor;in float vDepth;in vec3 vBase;in vec3 vWorld;in vec3 vNormal;out vec4 frag;
+uniform vec3 uFog;uniform float uFogDensity;uniform float uTime;uniform float uWet;
+uniform vec3 uPolicePos;uniform float uPursuit;
+void main(){
+ float amt=1.0-exp(-vDepth*vDepth*uFogDensity);
  vec3 exposed=1.4*vColor/(vec3(1.0)+0.34*vColor);
  vec3 col=mix(exposed,uFog,clamp(amt,0.0,0.9));
- frag=vec4(clamp(col,0.0,1.0),1.0);}`;
+ float upward=smoothstep(0.65,0.92,vNormal.y);
+ // Road and bridge materials have a restrained, world-anchored wet sheen.
+ // This is a lightweight shader approximation, NOT ray-traced reflections.
+ float road=max(1.0-smoothstep(0.018,0.058,distance(vBase,vec3(0.1451,0.2,0.3059))),
+                1.0-smoothstep(0.018,0.058,distance(vBase,vec3(0.2039,0.2627,0.3490))));
+ float streak=pow(1.0-abs(sin(vWorld.x*0.13+vWorld.z*0.44)),18.0);
+ col+=upward*road*(0.08+uWet*0.23)*streak*vec3(0.68,0.40,0.76);
+ // Ocean ripple shimmer near the sun direction, animated using real world space.
+ float sea=1.0-smoothstep(0.025,0.075,distance(vBase,vec3(0.0314,0.4118,0.5961)));
+ float wave=pow(max(0.0,sin(vWorld.z*2.2+uTime*1.4)*sin(vWorld.x*1.3-uTime*0.73)),7.0);
+ col+=upward*sea*wave*vec3(0.23,0.25,0.25);
+ // Neon signs and streetlights emit color in the shader even after sunset.
+ float mx=max(max(vBase.r,vBase.g),vBase.b);
+ float mn=min(min(vBase.r,vBase.g),vBase.b);
+ float neon=smoothstep(0.39,0.63,mx-mn)*smoothstep(0.55,0.9,mx);
+ float lamp=1.0-smoothstep(0.09,0.28,distance(vBase,vec3(0.992,0.949,0.694)));
+ col+=vBase*(0.43*neon+0.36*lamp)*(1.0-amt*0.55);
+ // Police sirens color nearby 3D geometry, not a 2D screen overlay.
+ float nearPolice=exp(-distance(vWorld.xz,uPolicePos.xz)*0.24)*uPursuit;
+ float siren=step(0.5,fract(uTime*6.0));
+ col+=mix(vec3(0.42,0.03,0.07),vec3(0.04,0.14,0.47),siren)*nearPolice*0.7;
+ frag=vec4(clamp(col,0.0,1.0),1.0);
+}`;
 const matPerspective=(fov,aspect,near,far)=>{let f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0])};
 function lookAt(e,t){let zx=e[0]-t[0],zy=e[1]-t[1],zz=e[2]-t[2],l=Math.hypot(zx,zy,zz)||1;zx/=l;zy/=l;zz/=l;
  let xx=zz,xz=-zx,lx=Math.hypot(xx,xz)||1;xx/=lx;xz/=lx;
@@ -265,7 +289,7 @@ export function cameraSafePosition(target,desired,obstacles=[],padding=.42){
 export class WebGLWorld{
  constructor(canvas){this.canvas=canvas;const gl=canvas.getContext('webgl2',{antialias:true,alpha:true});if(!gl)throw Error('WebGL2 unavailable on this device');this.gl=gl;
  const prog=gl.createProgram();gl.attachShader(prog,makeShader(gl,gl.VERTEX_SHADER,vs));gl.attachShader(prog,makeShader(gl,gl.FRAGMENT_SHADER,fs));gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(prog));this.program=prog;gl.useProgram(prog);
- this.uProj=gl.getUniformLocation(prog,'uProj');this.uView=gl.getUniformLocation(prog,'uView');this.uFog=gl.getUniformLocation(prog,'uFog');this.uFogDensity=gl.getUniformLocation(prog,'uFogDensity');this.uNight=gl.getUniformLocation(prog,'uNight');this.uSunDir=gl.getUniformLocation(prog,'uSunDir');this.uSunColor=gl.getUniformLocation(prog,'uSunColor');this.uAmbient=gl.getUniformLocation(prog,'uAmbient');
+ this.uProj=gl.getUniformLocation(prog,'uProj');this.uView=gl.getUniformLocation(prog,'uView');this.uFog=gl.getUniformLocation(prog,'uFog');this.uFogDensity=gl.getUniformLocation(prog,'uFogDensity');this.uTime=gl.getUniformLocation(prog,'uTime');this.uWet=gl.getUniformLocation(prog,'uWet');this.uPolicePos=gl.getUniformLocation(prog,'uPolicePos');this.uPursuit=gl.getUniformLocation(prog,'uPursuit');this.uNight=gl.getUniformLocation(prog,'uNight');this.uSunDir=gl.getUniformLocation(prog,'uSunDir');this.uSunColor=gl.getUniformLocation(prog,'uSunColor');this.uAmbient=gl.getUniformLocation(prog,'uAmbient');
  this.vao=gl.createVertexArray();this.vbo=gl.createBuffer();
  this.dynamicVAO=gl.createVertexArray();this.dynamicVbo=gl.createBuffer();
  for(const [vao,vbo] of [[this.vao,this.vbo],[this.dynamicVAO,this.dynamicVbo]]){
@@ -344,6 +368,34 @@ export class WebGLWorld{
  for(let z of [-54,-7,38])for(let x of [-32,0,32])for(let k=-5;k<=5;k++)b.box(x+k*.95,-.018,z,0.58,.02,2.1,'#bfcadd');
  for(let i=0;i<22;i++){const z=-88+i*7,x=-52+(i%2)*98;
   b.box(x,0,z,.52,5.5,.52,'#98715b');b.roof(x,4.2,z,3.3,2.8,i%2?'#1fbb90':'#1695a4');
+ }
+ // Shopfronts, tall poster panels, awnings and LED rail details use original
+ // physical geometry, not screenshots or remote textures. Keep them outside
+ // the actual driving corridor and below a bounded triangle budget.
+ for(const side of [-1,1])for(let zz=-66;zz<=39;zz+=21){
+  const shopX=side*17.9;
+  b.box(shopX,0,zz,2.2,4.6,10.7,side<0?'#243851':'#2d4461');
+  b.box(shopX-side*1.25,3.8,zz,1.7,.22,9.6,'#e05b9e');
+  b.box(shopX-side*1.32,4.2,zz,.30,.36,8.9,'#55ecf3');
+  for(let pane=-3.2;pane<=3.2;pane+=3.2){
+   b.box(shopX-side*1.12,1.05,zz+pane,.055,2.5,2.15,pane===0?'#237f9e':'#4b9baf');
+   b.box(shopX-side*1.16,1.05,zz+pane,.065,.14,2.0,'#b6f4f0');
+  }
+  b.box(shopX-side*.7,5.3,zz,2.0,1.2,4.0,side<0?'#af4db2':'#307bb7');
+  b.box(shopX-side*1.76,5.7,zz,.12,.14,3.6,'#f9b870');
+ }
+ // Alternating neon lane chevrons read as physical forward motion at speed.
+ for(let z=-73;z<48;z+=12)for(const side of [-1,1]){
+  const xx=side*5.9;
+  b.beam([xx-.78,.032,z-2.25],[xx,.032,z],.055,'#3e9ca7');
+  b.beam([xx+.78,.032,z-2.25],[xx,.032,z],.055,'#3e9ca7');
+ }
+ // Elevated waterside boardwalk and fine amber string lights facing the harbor.
+ b.box(-39,.16,71,68,.25,2.6,'#886d65');
+ for(let xx=-71;xx< -5;xx+=7){
+  b.box(xx,.2,70,.13,3.0,.13,'#798b9d');
+  b.sphere(xx,3.25,70,.25,.25,.25,'#ffd295',5,7);
+  if(xx+7< -5)b.beam([xx,3.24,70],[xx+7,3.24,70],.055,'#f7bb90');
  }
  // Harbor highway and skyline framing the drive toward the coastline.
  b.box(-46,4.5,53,26,.55,8,'#5c6e8c');for(let x of [-57,-46,-35])b.box(x,0,53,.8,4.5,.8,'#8c90a8');
@@ -459,7 +511,7 @@ export class WebGLWorld{
  gl.uniform3fv(this.uSunDir,[.55*Math.cos(sunAngle),.3+Math.max(0,daylight),.55*Math.sin(sunAngle)]);
  gl.uniform3fv(this.uSunColor,night>.3?[.13,.23,.46]:[1.13,.73+.18*warm,.50+.20*warm]);
  gl.uniform1f(this.uAmbient,night>.3?.34:weather==='rain'?.54:.64);
- gl.uniform3fv(this.uFog,sky);gl.uniform1f(this.uFogDensity,weather==='fog'?.00038:.000095);gl.uniform1f(this.uNight,night);
+ gl.uniform3fv(this.uFog,sky);gl.uniform1f(this.uFogDensity,weather==='fog'?.00038:.000095);gl.uniform1f(this.uNight,night);gl.uniform1f(this.uTime,t);gl.uniform1f(this.uWet,weather==='rain'?1:.18);gl.uniform3fv(this.uPolicePos,[player.policeX??-100,0,player.policeZ??-100]);gl.uniform1f(this.uPursuit,player.heat>.02?1:0);
  const dynamic=new MeshBuilder();const px=player.x,py=player.y,pz=player.z;
   // All avatar limbs, face, cosmetics and skateboard are actual animated 3D meshes.
   if(player.vehicle==='foot'||player.vehicle==='skate')buildCharacterMesh(dynamic,player,t);
