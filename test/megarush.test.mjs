@@ -82,7 +82,7 @@ test('MegaRush uses existing PUZUNIVO session, checks anti-duplicate purchases a
  assert.deepEqual([restored.body.x,restored.body.z],[0,0]);
  assert.equal(session.body.pickups.length,12);
  // A phone restart restores the original vehicle/camera/health, not just x/z.
- const savedState={vehicle:'skate',hp:2,heat:.34,angle:1.25,policeX:-10,policeZ:18,cameraYaw:-1.1,chaseActive:true,carSlot:2};
+ const savedState={vehicle:'skate',hp:2,heat:0,angle:1.25,policeX:-10,policeZ:18,cameraYaw:-1.1,chaseActive:false,carSlot:-1,wantedState:'patrol'};
  assert.equal((await request('/api/megarush/session/heartbeat',{id:session.body.id,x:1,z:1,state:savedState})).status,200);
  const resumedState=await request('/api/megarush/session/active');
  assert.deepEqual(resumedState.body.state,savedState);
@@ -129,12 +129,30 @@ test('MegaRush uses existing PUZUNIVO session, checks anti-duplicate purchases a
  assert.equal((await request('/api/megarush/session/active')).body.id,nextRun.body.id);
  assert.ok(nextRun.body.mission.targetCollectibles>session.body.mission.targetCollectibles);
  assert.ok(nextRun.body.pickups.length>=nextRun.body.mission.targetCollectibles);
- // New Harbor Chase begins on a skateboard in a real persisted pursuit.
+ // New gameplay starts with lawful free roam, not a forced chase.
  const fresh=await request('/api/megarush/session/active');
  assert.equal(fresh.body.state.vehicle,'skate');
- assert.equal(fresh.body.state.chaseActive,true);
+ assert.equal(fresh.body.state.chaseActive,false);
+ assert.equal(fresh.body.state.heat,0);
+ assert.equal(fresh.body.state.wantedState,'patrol');
  assert.equal(fresh.body.harborReached,false);
+ // A fake chase flag cannot create a police reward without a recorded offense.
  const state={...fresh.body.state};
+ assert.equal((await request('/api/megarush/session/heartbeat',{id:nextRun.body.id,x:0,z:0,state:{...state,chaseActive:true,heat:.93,wantedState:'chase'}})).status,409);
+ assert.equal((await request('/api/megarush/incident',{sessionId:nextRun.body.id,kind:'vehicle_theft'})).status,409,'skating is not a crime');
+ assert.equal((await request('/api/megarush/incident',{sessionId:nextRun.body.id,kind:'fictional_stealing'})).status,400);
+ // A valid stolen vehicle incident first requires an authoritative car heartbeat.
+ const driven={...state,vehicle:'car',carSlot:2};
+ assert.equal((await request('/api/megarush/session/heartbeat',{id:nextRun.body.id,x:1,z:1,state:driven})).status,200);
+ const report=await request('/api/megarush/incident',{sessionId:nextRun.body.id,kind:'vehicle_theft'});
+ assert.equal(report.status,200);assert.equal(report.body.wantedState,'chase');
+ assert.equal(report.body.chaseActive,true);
+ const duplicate=await request('/api/megarush/incident',{sessionId:nextRun.body.id,kind:'vehicle_theft'});
+ assert.equal(duplicate.body.duplicate,true,'same crime cannot be recorded twice');
+ const stateAfter=await request('/api/megarush/session/active');
+ assert.equal(stateAfter.body.state.chaseActive,true);
+ assert.equal(stateAfter.body.state.wantedState,'chase');
+ Object.assign(state,stateAfter.body.state);
  // Fake long-distance teleport cannot earn the server-side checkpoint.
  assert.equal((await request('/api/megarush/session/heartbeat',{id:nextRun.body.id,x:0,z:112,state})).status,400);
  assert.equal((await request('/api/megarush/level/complete',{sessionId:nextRun.body.id})).status,409);
@@ -164,7 +182,7 @@ test('Sprint increases traversal speed without altering normal movement and poli
   updatePlayer(b,{x:0,z:1,sprint:true},world,.025);
  }
  assert.ok(b.z>a.z*1.25,'sprint materially increases skate distance');
- const chased={...avatar(),vehicle:'car',heat:.95,policeX:1,policeZ:1};
+ const chased={...avatar(),vehicle:'car',heat:.95,policeX:1,policeZ:1,chaseActive:true,wantedState:'chase'};
  updatePlayer(chased,{x:0,z:0,sprint:false},world,.03);
  assert.equal(chased.hp,2,'pursuit contact consumes a heart');
  updatePlayer(chased,{x:0,z:0,sprint:false},world,.03);
@@ -265,6 +283,9 @@ test('Existing PUZUNIVO database session schema migrates in place without deleti
  CREATE TABLE mr_sessions(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,level INTEGER NOT NULL,character TEXT NOT NULL,started_at INTEGER NOT NULL,last_seen INTEGER NOT NULL,ended_at INTEGER,x REAL NOT NULL DEFAULT 0,z REAL NOT NULL DEFAULT 0,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
  INSERT INTO users(id,role,name,created_at) VALUES('legacy-player','player','Original Player',1);
  INSERT INTO mr_sessions(id,user_id,level,character,started_at,last_seen,x,z) VALUES('legacy-run','legacy-player',7,'rylee',1,1,7,3);
+ ALTER TABLE mr_sessions ADD COLUMN chase_active INTEGER NOT NULL DEFAULT 0;
+ ALTER TABLE mr_sessions ADD COLUMN heat REAL NOT NULL DEFAULT 0;
+ UPDATE mr_sessions SET chase_active=1,heat=.92 WHERE id='legacy-run';
  `);legacy.close();
  const port=await reservePort();
  const child=spawn(process.execPath,['server.mjs'],{cwd:new URL('..',import.meta.url).pathname,
@@ -277,11 +298,13 @@ test('Existing PUZUNIVO database session schema migrates in place without deleti
  }
  const db=new DatabaseSync(database);
  try{
-  const item=db.prepare("SELECT id,user_id,level,x,z,required_orbs,pickup_count,vehicle,hp,heat,view_yaw,car_slot FROM mr_sessions WHERE id='legacy-run'").get();
+  const item=db.prepare("SELECT id,user_id,level,x,z,required_orbs,pickup_count,vehicle,hp,heat,view_yaw,car_slot,chase_active,incident_type,wanted_state FROM mr_sessions WHERE id='legacy-run'").get();
   assert.equal(item.user_id,'legacy-player');assert.equal(item.level,7);
   assert.equal(item.x,7);assert.equal(item.z,3);
   assert.equal(item.required_orbs,3);assert.equal(item.pickup_count,12);
   assert.equal(item.vehicle,'foot');assert.equal(item.hp,3);assert.equal(item.heat,0);assert.equal(item.view_yaw,0);assert.equal(item.car_slot,-1);
+  assert.equal(item.chase_active,0,'older forced chases retire without deleting this session');
+  assert.equal(item.incident_type,'');assert.equal(item.wanted_state,'patrol');
   assert.ok(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='progress'").get(),'original game progress table retained');
  }finally{db.close()}
 });
@@ -467,7 +490,7 @@ test('Harbor skate pursuit stays physically active until the actual waterfront f
  for(let i=0;i<60;i++)updatePlayer(p,{x:0,z:0},world,1/60);
  assert.ok(p.heat<oldHeat,'heat decays normally after harbor escape');
  const source=readFileSync(new URL('../public/megarush/game.js',import.meta.url),'utf8');
- assert.match(source,/chaseActive:savedState\.chaseActive\?\?!resumed/,'first-run chase starts on skateboard and persists on restore');
+ assert.match(source,/chaseActive:savedState\.chaseActive\?\?false/,'new runs are free roam; only incidents trigger pursuit');
  assert.match(source,/player\.chaseActive\?chaseRatio:ratio/,'HUD meter follows current chase objective');
 });
 
@@ -508,7 +531,7 @@ test('Sunset harbor material pass has world-anchored neon, water and police ligh
  assert.match(src,/nearPolice=exp\(-distance\(vWorld\.xz,uPolicePos\.xz\)/);
  assert.match(src,/smoothstep\(0\.65,0\.92,vNormal\.y\)/,'shiny road must only affect upward-facing 3D geometry');
  assert.match(src,/gl\.uniform1f\(this\.uWet,weather==='rain'\?1:\.18\)/);
- assert.match(src,/gl\.uniform1f\(this\.uPursuit,player\.heat>\.02\?1:0\)/);
+ assert.match(src,/gl\.uniform1f\(this\.uPursuit,player\.chaseActive\?1:0\)/);
 });
 
 test('Neon shopfronts and harbor promenade preserve driving corridor and original admin',()=>{
@@ -550,4 +573,30 @@ test('Port-world architectural details and rider lean remain physically generate
  assert.equal(noLean.vertices.length,withLean.vertices.length,'lean does not create duplicate geometry');
  assert.ok(withLean.vertices.every(Number.isFinite),'motion pose keeps positions and normals valid');
  assert.notDeepEqual(noLean.vertices.slice(-200),withLean.vertices.slice(-200),'backpack and upper body lean visibly');
+});
+
+
+test('Peaceful roaming never summons police; verified reckless collisions emit an incident trigger',()=>{
+ const world={weather:'clear',collide:()=>false,elevation:()=>0,traffic:[{lane:0,position:0,speed:0}],t:0};
+ const p={x:0,y:0,z:0,vx:0,vy:0,vz:0,angle:0,onGround:true,vehicle:'skate',heat:0,hp:3,crashCooldown:0,policeX:0,policeZ:1,chaseActive:false,wantedState:'patrol',carSlot:-1};
+ for(let i=0;i<100;i++){world.t=i/60;updatePlayer(p,{x:0,z:0,sprint:false},world,1/60);}
+ assert.equal(p.chaseActive,false,'skating in the street is lawful');
+ assert.equal(p.hp,3,'no passive officer contact when there is no offense');
+ assert.equal(p.heat,0);
+ // Road collision at actual driving speed is an offense; low-speed contact isn't.
+ const impact={...p,vehicle:'car',carSlot:2,z:-95,policeZ:22,vx:0,vz:19,crashCooldown:0};
+ updatePlayer(impact,{x:0,z:1},world,1/60);
+ assert.equal(impact.pendingIncident,'reckless_collision');
+ assert.equal(impact.chaseActive,false,'server must confirm the crime before police start');
+});
+
+test('PUZUNIVO public portal displays only MegaRush and preserves old puzzle data for safe rollback',()=>{
+ const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+ assert.match(app,/One world\. Your rules\./);
+ assert.match(app,/function gameCards\(\)\{return `<div class="game-grid"><a href="\/megarush"/);
+ assert.doesNotMatch(app,/catalog\.map\(g=>`<div class="card game-card"/,'four old puzzle cards are not visible');
+ assert.doesNotMatch(app,/Four games\. Endless discovery\./);
+ assert.match(app,/Play MegaRush/);
+ const legacy=readFileSync(new URL('../logic.mjs',import.meta.url),'utf8');
+ assert.match(legacy,/Number Series|number/i,'no deletion of live user records or shared schemas');
 });

@@ -59,8 +59,11 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
  if(!sessionCols.has('pickup_count'))db.exec('ALTER TABLE mr_sessions ADD COLUMN pickup_count INTEGER NOT NULL DEFAULT 12');
  // Same authoritative session row retains driving state, damage and third-person camera.
  // Add columns in place; old database rows remain readable with safe defaults.
- const sessionStateColumns={vehicle:"TEXT NOT NULL DEFAULT 'foot'",hp:'INTEGER NOT NULL DEFAULT 3',heat:'REAL NOT NULL DEFAULT 0',facing:'REAL NOT NULL DEFAULT 0',police_x:'REAL NOT NULL DEFAULT -12',police_z:'REAL NOT NULL DEFAULT 20',view_yaw:'REAL NOT NULL DEFAULT 0',chase_active:'INTEGER NOT NULL DEFAULT 0',car_slot:'INTEGER NOT NULL DEFAULT -1',harbor_reached:'INTEGER NOT NULL DEFAULT 0'};
+ const sessionStateColumns={vehicle:"TEXT NOT NULL DEFAULT 'foot'",hp:'INTEGER NOT NULL DEFAULT 3',heat:'REAL NOT NULL DEFAULT 0',facing:'REAL NOT NULL DEFAULT 0',police_x:'REAL NOT NULL DEFAULT -12',police_z:'REAL NOT NULL DEFAULT 20',view_yaw:'REAL NOT NULL DEFAULT 0',chase_active:'INTEGER NOT NULL DEFAULT 0',car_slot:'INTEGER NOT NULL DEFAULT -1','harbor_reached':'INTEGER NOT NULL DEFAULT 0',incident_type:"TEXT NOT NULL DEFAULT ''",wanted_state:"TEXT NOT NULL DEFAULT 'patrol'"};
  for(const [name,type] of Object.entries(sessionStateColumns))if(!sessionCols.has(name))db.exec(`ALTER TABLE mr_sessions ADD COLUMN ${name} ${type}`);
+ // Retire the forced police chase from runs started by older preview builds,
+ // without deleting sessions, collectibles, achievements or user accounts.
+ run("UPDATE mr_sessions SET chase_active=0, heat=0, wanted_state='patrol' WHERE incident_type='' AND chase_active=1 AND ended_at IS NULL");
  for(const [k,v] of Object.entries(DEFAULTS))run('INSERT OR IGNORE INTO mr_settings VALUES(?,?)',k,JSON.stringify(v));
  const settings=()=>Object.fromEntries(all('SELECT key,value FROM mr_settings').map(r=>[r.key,JSON.parse(r.value)]));
  const progress=user=>{
@@ -106,7 +109,7 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
      }
      const collectedIds=all('SELECT item_id FROM mr_pickups WHERE user_id=? AND level=?',user.id,s.level).map(r=>r.item_id);
      return json(res,200,{active:true,id:s.id,level:s.level,character:s.character,
-       x:s.x,z:s.z,state:{vehicle:s.vehicle,hp:s.hp,heat:s.heat,angle:s.facing,policeX:s.police_x,policeZ:s.police_z,cameraYaw:s.view_yaw,chaseActive:!!s.chase_active,carSlot:s.car_slot},harborReached:!!s.harbor_reached,
+       x:s.x,z:s.z,state:{vehicle:s.vehicle,hp:s.hp,heat:s.heat,angle:s.facing,policeX:s.police_x,policeZ:s.police_z,cameraYaw:s.view_yaw,chaseActive:!!s.chase_active,carSlot:s.car_slot,wantedState:s.wanted_state},harborReached:!!s.harbor_reached,
        mission:{...mission(s.level),targetCollectibles:s.required_orbs},
        pickups:pickupCoords(s.level,{},s.pickup_count),collectedIds});
    }
@@ -117,9 +120,22 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
      const p=progress(user);
      if(all('SELECT id FROM mr_sessions WHERE user_id=? AND ended_at IS NULL',user.id).length>=3)run('UPDATE mr_sessions SET ended_at=? WHERE user_id=? AND ended_at IS NULL',now(),user.id);
      const id=uuid(),t=now(),snapshot=settings(),runMission=mission(p.level,snapshot),runPickups=pickupCoords(p.level,snapshot);
-     run('INSERT INTO mr_sessions(id,user_id,level,character,started_at,last_seen,x,z,required_orbs,pickup_count,vehicle,heat,chase_active,police_x,police_z) VALUES(?,?,?,?,?,?,0,0,?,?,?,?,1,-3,-20)',id,user.id,p.level,b.character,t,t,runMission.targetCollectibles,runPickups.length,'skate',.92);
+     run('INSERT INTO mr_sessions(id,user_id,level,character,started_at,last_seen,x,z,required_orbs,pickup_count,vehicle,heat,chase_active,police_x,police_z) VALUES(?,?,?,?,?,?,0,0,?,?,?,?,0,-12,20)',id,user.id,p.level,b.character,t,t,runMission.targetCollectibles,runPickups.length,'skate',0);
      run('UPDATE mr_progress SET equipped_character=?,updated_at=? WHERE user_id=?',b.character,t,user.id);
      return json(res,201,{id,level:p.level,mission:runMission,harborReached:false,pickups:runPickups,collectedIds:all('SELECT item_id FROM mr_pickups WHERE user_id=? AND level=?',user.id,p.level).map(r=>r.item_id)});
+   }
+   // Patrol is the default; only a player-triggered, server-recorded incident
+   // can activate police. A browser cannot earn the harbor reward merely by
+   // forging a chaseActive flag in its session heartbeat.
+   if(route==='/api/megarush/incident'&&method==='POST'){
+     checkPlayer(user);throttle('mr-incident-'+user.id,12);
+     const body=await requireBody(req),s=currentSession(user,body.sessionId);
+     if(!['vehicle_theft','reckless_collision'].includes(body.kind))throw fail(400,'Unknown incident');
+     if(s.incident_type)return json(res,200,{ok:true,duplicate:true,chaseActive:!!s.chase_active,heat:s.heat,wantedState:s.wanted_state});
+     // The player's previously validated heartbeat must show the vehicle mode.
+     if(s.vehicle!=='car'||s.car_slot<0||s.car_slot>13)throw fail(409,'Enter a vehicle before reporting this incident');
+     run("UPDATE mr_sessions SET incident_type=?,wanted_state='chase',chase_active=1,heat=0.92,police_x=x-3,police_z=z-20 WHERE id=? AND incident_type=''",body.kind,s.id);
+     return json(res,200,{ok:true,chaseActive:true,heat:.92,wantedState:'chase'});
    }
    if(route==='/api/megarush/session/heartbeat'&&method==='POST'){
      checkPlayer(user);throttle('mr-tick-'+user.id,150);
@@ -129,17 +145,19 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
      if(travel>dt*23+6)throw fail(400,'Impossible travel distance');
      const raw=b.state;
      if(raw!==undefined){
-       if(!raw||typeof raw!=='object'||Array.isArray(raw)||!['foot','skate','car','swim'].includes(raw.vehicle)||!Number.isInteger(raw.hp)||raw.hp<0||raw.hp>3||typeof raw.chaseActive!=='boolean'||!Number.isInteger(raw.carSlot)||raw.carSlot< -1||raw.carSlot>13||
+       if(!raw||typeof raw!=='object'||Array.isArray(raw)||!['foot','skate','car','swim'].includes(raw.vehicle)||!Number.isInteger(raw.hp)||raw.hp<0||raw.hp>3||typeof raw.chaseActive!=='boolean'||!Number.isInteger(raw.carSlot)||raw.carSlot< -1||raw.carSlot>13||!['patrol','search','chase'].includes(raw.wantedState??s.wanted_state)||
            ![raw.heat,raw.angle,raw.policeX,raw.policeZ,raw.cameraYaw].every(Number.isFinite)||raw.heat<0||raw.heat>1||
            Math.abs(raw.angle)>100||Math.abs(raw.cameraYaw)>100||Math.abs(raw.policeX)>170||Math.abs(raw.policeZ)>170)throw fail(400,'Invalid saved gameplay state');
-       run('UPDATE mr_sessions SET x=?,z=?,last_seen=?,vehicle=?,hp=?,heat=?,facing=?,police_x=?,police_z=?,view_yaw=?,chase_active=?,car_slot=? WHERE id=?',
-         x,z,t,raw.vehicle,raw.hp,raw.heat,raw.angle,raw.policeX,raw.policeZ,raw.cameraYaw,Number(raw.chaseActive),raw.carSlot,s.id);
+       if(raw.chaseActive&&!s.incident_type)throw fail(409,'Police chase requires a verified incident');
+       const wanted=raw.chaseActive?'chase':(raw.wantedState==='search'&&s.incident_type?'search':'patrol');
+       run('UPDATE mr_sessions SET x=?,z=?,last_seen=?,vehicle=?,hp=?,heat=?,facing=?,police_x=?,police_z=?,view_yaw=?,chase_active=?,car_slot=?,wanted_state=? WHERE id=?',
+         x,z,t,raw.vehicle,raw.hp,raw.heat,raw.angle,raw.policeX,raw.policeZ,raw.cameraYaw,Number(raw.chaseActive),raw.carSlot,wanted,s.id);
      }else run('UPDATE mr_sessions SET x=?,z=?,last_seen=? WHERE id=?',x,z,t,s.id);
      // Only the server may confirm a harbor escape. The client cannot award itself
      // the checkpoint through a submitted `harborReached` flag or teleport.
      const nearHarbor=Math.hypot(x-HARBOR_CHECKPOINT.x,z-HARBOR_CHECKPOINT.z)<HARBOR_CHECKPOINT.radius;
-     const eligible=!s.harbor_reached&&s.chase_active===1&&raw?.chaseActive===true&&nearHarbor&&t-s.started_at>=7000;
-     if(eligible)run('UPDATE mr_sessions SET harbor_reached=1,chase_active=0,heat=0 WHERE id=? AND harbor_reached=0',s.id);
+     const eligible=!s.harbor_reached&&s.incident_type!==''&&s.chase_active===1&&raw?.chaseActive===true&&nearHarbor&&t-s.started_at>=7000;
+     if(eligible)run("UPDATE mr_sessions SET harbor_reached=1,chase_active=0,heat=0,wanted_state='patrol' WHERE id=? AND harbor_reached=0",s.id);
      return json(res,200,{ok:true,harborReached:!!s.harbor_reached||eligible});
    }
    if(route==='/api/megarush/pickup'&&method==='POST'){

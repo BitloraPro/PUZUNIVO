@@ -1,3 +1,11 @@
+## Iteration v0.6.0 — Free Roam and Action-Triggered Police, MegaRush-only Public Dashboard (2026-10-13)
+
+- New games begin on a skateboard in lawful **free roam**, with zero heat and no automatic pursuer. Pre-existing forced preview chases are retired in-place during additive schema migration, without deleting accounts, completed levels or pickup records.
+- Taking a traffic car and high-speed car-to-car collisions report a named incident through the existing authenticated MegaRush API. The server requires a validated occupied-vehicle heartbeat before it records an incident and activates the chase; client-only fabricated `chaseActive` flags cannot earn a Harbor checkpoint. Duplicate incident reports do not create additional incident records.
+- Client physics moves from active pursuit to short police search and eventual stand-down when the player has escaped far enough. No actual multiplayer AI, civilian law reporting network or stealth perception system is claimed.
+- Public PUZUNIVO Welcome, Home, Play and Profile now promote one MegaRush adventure; old four puzzle engines, progress, admin records and schema are preserved and not deleted. Bump PWA cache key and brand metadata.
+- Requires real Android/WebGL2 handset visual QA and native APK build; **not final cinematic asset quality**, no verified Apper deployment or production signing.
+
 ## Iteration v0.5.4 — action camera, rider carving and detailed working harbor (2026-10-13)
 
 - Replace tiny/far rigid chase camera with a pure, bounded, speed-responsive camera profile; skateboard and on-foot views start closer, fast skating opens road sightline, car chase maintains a longer view. Camera yaw/analog steering and collision-protected third person remain unchanged.

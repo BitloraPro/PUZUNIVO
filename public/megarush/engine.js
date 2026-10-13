@@ -563,7 +563,7 @@ export class WebGLWorld{
  gl.uniform3fv(this.uSunDir,[.55*Math.cos(sunAngle),.3+Math.max(0,daylight),.55*Math.sin(sunAngle)]);
  gl.uniform3fv(this.uSunColor,night>.3?[.13,.23,.46]:[1.13,.73+.18*warm,.50+.20*warm]);
  gl.uniform1f(this.uAmbient,night>.3?.34:weather==='rain'?.54:.64);
- gl.uniform3fv(this.uFog,sky);gl.uniform1f(this.uFogDensity,weather==='fog'?.00038:.000095);gl.uniform1f(this.uNight,night);gl.uniform1f(this.uTime,t);gl.uniform1f(this.uWet,weather==='rain'?1:.18);gl.uniform3fv(this.uPolicePos,[player.policeX??-100,0,player.policeZ??-100]);gl.uniform1f(this.uPursuit,player.heat>.02?1:0);
+ gl.uniform3fv(this.uFog,sky);gl.uniform1f(this.uFogDensity,weather==='fog'?.00038:.000095);gl.uniform1f(this.uNight,night);gl.uniform1f(this.uTime,t);gl.uniform1f(this.uWet,weather==='rain'?1:.18);gl.uniform3fv(this.uPolicePos,[player.policeX??-100,0,player.policeZ??-100]);gl.uniform1f(this.uPursuit,player.chaseActive?1:0);
  const dynamic=new MeshBuilder();const px=player.x,py=player.y,pz=player.z;
   // All avatar limbs, face, cosmetics and skateboard are actual animated 3D meshes.
   if(player.vehicle==='foot'||player.vehicle==='skate')buildCharacterMesh(dynamic,player,t);
@@ -599,7 +599,7 @@ export class WebGLWorld{
   if(dist<42)buildVehicleMesh(dynamic,{x:v.lane,z,angle:0,color:v.color});
   else if(dist<135){dynamic.box(v.lane,.12,z,2.2,.72,3.65,v.color);dynamic.box(v.lane,.84,z,1.7,.67,1.68,'#6c9db8');}
  }
- if(player.heat>.02){const policeX=player.policeX,policeZ=player.policeZ;
+ if(player.chaseActive||player.wantedState==='search'){const policeX=player.policeX,policeZ=player.policeZ;
   buildVehicleMesh(dynamic,{x:policeX,y:this.elevation(policeX,policeZ),z:policeZ,angle:Math.atan2(player.x-policeX,player.z-policeZ),police:true,flash:Math.floor(t*7)%2===0});}
  for(let i=0;i<Math.round(this.walkers.length*(config.pedestrianDensity??.7));i++){
   const ped=this.walkers[i],zx=ped.x+Math.sin(t*ped.walk+ped.phase)*2.2,zz=ped.z+Math.cos(t*ped.walk+ped.phase)*2.4;
@@ -661,7 +661,19 @@ export function updatePlayer(p,controls,world,dt){dt=Math.min(dt,.05);p.crashCoo
  p.trickTimer=Math.max(0,(p.trickTimer||0)-dt);
  // The previous decay silently stopped police pursuit during a long harbor run,
  // even while the active mission still said ESCAPE THE CHASE.
+ p.wantedState??=(p.chaseActive?'chase':'patrol');
+ p.searchTime??=0;
  p.heat=p.chaseActive?Math.max(.78,p.heat-dt*.012):Math.max(0,p.heat-dt*(p.vehicle==='car'?.012:.055));
+ // No officer follows a law-abiding skater. A distant escape leads to a
+ // search, and then stand-down, rather than a permanent unearned pursuit.
+ const officerDistance=Math.hypot(p.x-(p.policeX??-12),p.z-(p.policeZ??20));
+ if(p.chaseActive&&officerDistance>48){p.searchTime+=dt;if(p.searchTime>7){p.chaseActive=false;p.wantedState='search';p.searchTime=0;p.heat=.28;}}
+ else if(p.chaseActive)p.searchTime=0;
+ else if(p.wantedState==='search'){
+  p.searchTime+=dt;
+  if(officerDistance<17){p.chaseActive=true;p.wantedState='chase';p.heat=.8;p.searchTime=0;}
+  else if(p.searchTime>16){p.wantedState='patrol';p.heat=0;p.searchTime=0;}
+ }
  const desiredX=Number(controls.x)||0,desiredZ=Number(controls.z)||0;const inputMag=Math.min(1,Math.hypot(desiredX,desiredZ));
  const dx=inputMag?desiredX/inputMag:0,dz=inputMag?desiredZ/inputMag:0;
  // Responsive arcade speeds in metres/sec. Analog stick deflection scales
@@ -683,7 +695,7 @@ export function updatePlayer(p,controls,world,dt){dt=Math.min(dt,.05);p.crashCoo
   // from the old position permits diagonal movement INSIDE a corner.
   if(!blocks(nx,p.z))p.x=nx;else{p.vx=0;blocked=true;}
   if(!blocks(p.x,nz))p.z=nz;else{p.vz=0;blocked=true;}
-  if(blocked&&p.vehicle==='car'&&p.crashCooldown<=0){p.hp=Math.max(0,p.hp-1);p.crashCooldown=2;p.heat=Math.min(1,p.heat+.15)}
+  if(blocked&&p.vehicle==='car'&&p.crashCooldown<=0){p.hp=Math.max(0,p.hp-1);p.crashCooldown=2;}
  }
  const water=p.z>66&&!onHarborRoad(p.x,p.z);
  if(water&&p.vehicle!=='car'){p.vehicle='swim';p.vy=clamp(p.vy,-2,2);p.y=lerp(p.y,-.5,.06);if(controls.jump)p.y=Math.min(1,p.y+dt*2);if(controls.dive)p.y=Math.max(-2,p.y-dt*1.9);}
@@ -694,7 +706,7 @@ export function updatePlayer(p,controls,world,dt){dt=Math.min(dt,.05);p.crashCoo
   if(p.y<=targetY){p.y=targetY;p.vy=0;p.onGround=true;}else p.onGround=false;
  }
  // Police approaches at a bounded speed while pursuit is active. Collision can take a heart.
- if(p.heat>.05){
+ if(p.chaseActive){
   const chaseSpeed=dt*(p.vehicle==='car'?5.2:3.6),dist=Math.hypot(p.x-p.policeX,p.z-p.policeZ)||1;
   p.policeX+=(p.x-p.policeX)/dist*Math.min(dist,chaseSpeed);
   p.policeZ+=(p.z-p.policeZ)/dist*Math.min(dist,chaseSpeed);
@@ -704,7 +716,10 @@ export function updatePlayer(p,controls,world,dt){dt=Math.min(dt,.05);p.crashCoo
  if(p.vehicle==='car'&&p.crashCooldown<=0&&Array.isArray(world.traffic)){
   const now=Number(world.t)||0;
   for(const car of world.traffic){if(car.occupied)continue;const z=trafficPosition(car,now);
-   if(Math.abs(car.lane-p.x)<2.65&&Math.abs(z-p.z)<3.15){p.hp=Math.max(0,p.hp-1);p.crashCooldown=2;break;}
+   if(Math.abs(car.lane-p.x)<2.65&&Math.abs(z-p.z)<3.15){
+    p.hp=Math.max(0,p.hp-1);p.crashCooldown=2;
+    if(Math.hypot(p.vx,p.vz)>9&&!p.chaseActive)p.pendingIncident='reckless_collision';
+    break;}
   }
  }
  if(p.hp<=0){p.hp=0;p.vehicle='foot';p.heat=0;p.vx=0;p.vy=0;p.vz=0;return 'crash';}

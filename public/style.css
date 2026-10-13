@@ -6,3 +6,11 @@
 .megarush-tile{display:block}
 
 .megarush-tile{background:radial-gradient(circle at 88% 16%,#22e8ef50,transparent 55%),linear-gradient(135deg,#28379b,#542ca0 60%,#801e7b);border:1px solid #9b81fa;color:white;text-decoration:none;box-shadow:0 10px 28px #511ddc66;min-height:156px}.megarush-tile .game-icon{background:linear-gradient(130deg,#6bf5ee,#a47dff);box-shadow:0 0 20px #55f5eb70}.megarush-tile h3{font-size:16px}.megarush-tile:hover{transform:translateY(-3px);box-shadow:0 14px 32px #8242e281}
+
+/* MegaRush-first public portal. Historical puzzle accounts/data remain in the
+   existing SQLite backend for reversible migration, not as player-facing cards. */
+.game-grid:has(> .megarush-tile:only-child){grid-template-columns:minmax(0,1fr)}
+.game-grid:has(> .megarush-tile:only-child) .megarush-tile{min-height:184px}
+.game-grid:has(> .megarush-tile:only-child) .megarush-tile h3{font-size:21px}
+.nav:has(> button:nth-child(3):last-child){grid-template-columns:repeat(3,1fr)}
+@media(max-width:390px){.game-grid:has(> .megarush-tile:only-child) .megarush-tile{min-height:170px}}

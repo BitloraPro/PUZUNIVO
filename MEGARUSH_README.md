@@ -1,4 +1,4 @@
-> Current local milestone: v0.5.4 code verification (44 automated tests); APK **not** compiled, Android GPU **not** tested, Apper **not** deployed.
+> Current local milestone: v0.6.0 code verification (at least 46 automated tests); APK **not** compiled, Android GPU **not** tested, Apper **not** deployed.
 
 # MegaRush: The Multi-Verse Map — PUZUNIVO Fifth Game
 
@@ -32,7 +32,7 @@ Open:
 - **Main Admin:** http://localhost:3000/admin
 - **MegaRush secure Live-Ops Admin:** http://localhost:3000/admin/megarush
 
-Select **Continue as Guest** (automatically when starting MegaRush) or sign in with a real PUZUNIVO account. The fifth MegaRush card is displayed next to the original four brain games on the player Home and Games pages. Existing account, sessions, and coin balances remain the sole identity/economy source. Any existing `data/puzunivo.sqlite` continues to work: MegaRush tables are created with `CREATE TABLE IF NOT EXISTS` without destroying the current schema.
+Select **Continue as Guest** (automatically when starting MegaRush) or sign in with a real PUZUNIVO account. The player Home and Games pages now display only MegaRush. Old puzzle data and code remain intact for safe rollback. Lawful free roaming does not automatically generate police pursuit; vehicle theft and reckless vehicle collisions are incident-triggered, recorded server-side. Existing account, sessions, and coin balances remain the sole identity/economy source. Any existing `data/puzunivo.sqlite` continues to work: MegaRush tables are created with `CREATE TABLE IF NOT EXISTS` without destroying the current schema.
 
 ## Real, currently implemented behavior
 
@@ -152,4 +152,4 @@ Do **not** ship demo passwords, store SQLite files in git, add fake reward callb
 
 ### v0.4.2 continuation
 
-The fifth game's code now includes a physically traversable coastal highway and optional active **Harbor Chase** mission. Enter a near unoccupied traffic car to trigger a pursuit, drive along the central coast causeway towards the real `(x=0,z=112)` harbor gate, follow its dynamically calculated waypoint, and arrive to end the chase. Escaping does not grant fabricated currency. The same progression/coin DB and Admin remain authoritative. A 3D kickflip, building-safe camera, sun/ambient shading and stronger Android navigation are source-backed but not phone-render tested. `npm run check && npm test` runs 33 tests.
+The primary game's code now includes a physically traversable coastal highway and optional active **Harbor Chase** mission. Enter a near unoccupied traffic car to trigger a pursuit, drive along the central coast causeway towards the real `(x=0,z=112)` harbor gate, follow its dynamically calculated waypoint, and arrive to end the chase. Escaping does not grant fabricated currency. The same progression/coin DB and Admin remain authoritative. A 3D kickflip, building-safe camera, sun/ambient shading and stronger Android navigation are source-backed but not phone-render tested. `npm run check && npm test` runs 33 tests.
