@@ -1,4 +1,4 @@
-> Current local milestone: v0.4.3 code verification (36 automated tests); APK **not** compiled, Android GPU **not** tested, Apper **not** deployed.
+> Current local milestone: v0.5.4 code verification (44 automated tests); APK **not** compiled, Android GPU **not** tested, Apper **not** deployed.
 
 # MegaRush: The Multi-Verse Map — PUZUNIVO Fifth Game
 

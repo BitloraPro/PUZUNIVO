@@ -4,6 +4,15 @@
 const TAU=Math.PI*2;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const lerp=(a,b,t)=>a+(b-a)*t;
+// A speed-responsive third-person composition keeps the hero large at rest,
+// widens road visibility at high speed and never changes physics or aiming yaw.
+// Numeric inputs are bounded for broken/late WebView sensor or frame data.
+export function cinematicCameraProfile(vehicle,speed=0){
+ const pace=clamp(Number.isFinite(speed)?Math.abs(speed)/16:0,0,1);
+ if(vehicle==='car')return {distance:10.6+pace*1.5,height:4.4+pace*.35,targetHeight:1.55,fov:61+pace*3};
+ if(vehicle==='skate')return {distance:6.25+pace*.9,height:3.25+pace*.30,targetHeight:1.38,fov:56+pace*2.8};
+ return {distance:5.95+pace*.65,height:3.1+pace*.35,targetHeight:1.45,fov:56+pace*2.5};
+}
 // An exponential follow factor produces the same third-person camera position
 // at 30/60/90 Hz for an equal amount of simulated time.
 export function cameraFollowFactor(seconds,rate=10){
@@ -176,6 +185,7 @@ export function buildCharacterMesh(mesh,player,t){
   if(trick>0)mesh.rotateRange(boardStart,at(0,.16,0),[sa,0,ca],trick*TAU);
  }
  // Independent upper/lower leg segments avoid the old rigid rectangular animation.
+ const bodyStart=mesh.vertices.length; // keep board and ground contact aligned while rider leans
  const hips=1.05-crouch+bob,shoulder=1.73-crouch+bob;
  box(0,hips-.17,0,.63,.45,.43,'#29354c');
  for(const side of [-1,1]){
@@ -215,6 +225,10 @@ export function buildCharacterMesh(mesh,player,t){
  // Little backpack depth makes the in-game third-person silhouette readable.
  box(0,shoulder-.38,-.39,.53,.62,.2,'#111a2d');
  box(0,shoulder-.22,-.50,.28,.17,.04,'#59dfc4');
+ // Physical carving posture: animated body leans slightly into a fast run,
+ // without tipping the wheels or the contact shadow into the road.
+ const lean=clamp(speed/24,0,.20)*(skate?1:.40);
+ if(lean>.001)mesh.rotateRange(bodyStart,at(0,.95,0),[ca,0,-sa],lean);
  return mesh;
 }
 export const HARBOR_FINISH=Object.freeze({x:0,z:112});
@@ -384,6 +398,43 @@ export class WebGLWorld{
   b.box(shopX-side*.7,5.3,zz,2.0,1.2,4.0,side<0?'#af4db2':'#307bb7');
   b.box(shopX-side*1.76,5.7,zz,.12,.14,3.6,'#f9b870');
  }
+ // Hand-built harbor businesses: recessed shopfronts, reflective glass, signs,
+ // projecting canopies and balcony rails. Geometry stays beside the road;
+ // no extra collision volumes are silently introduced into the driving lane.
+ for(const side of [-1,1])for(let z=-57;z<=27;z+=28){
+  const x=side*24.1,front=x-side*2.6;
+  b.box(x,0,z,5.6,9.4,14,'#233c56');
+  b.box(front,1,z,.18,3.1,9,'#2c86a3');
+  for(const zz of [-3,0,3]){
+   b.box(front-side*.13,.93,z+zz,.1,2.45,1.9,'#57b5c3');
+   b.box(front-side*.21,2.1,z+zz,.12,.055,1.9,'#b8f8ec');
+  }
+  b.box(front-side*.75,3.85,z,1.65,.20,12,'#f179aa');
+  b.box(front-side*.90,4.22,z,.38,.27,10.8,'#6df2df');
+  b.box(front-side*.15,6.6,z,.15,2.0,8.8,'#3c6385');
+  for(const zz of [-5.0,-2.5,0,2.5,5.0]){
+   b.box(front-side*.27,7.2,z+zz,.09,1.05,1.2,'#e7ca99');
+   b.box(front-side*.63,5.4,z+zz,.07,.08,2.4,'#e8a1d1');
+  }
+  b.box(x,9.4,z,6.1,.35,14.5,'#8e83aa');
+  b.box(front-side*1.2,3.08,z,2.4,.14,10,'#ffd79b');
+ }
+ // Working-port silhouettes: one skeletal loading crane, containers, and
+ // marina pylons framed away from the route to the actual harbor checkpoint.
+ const craneX=83,craneZ=91;
+ for(const side of [-1,1]){
+  b.beam([craneX+side*5,0,craneZ],[craneX+side*3,26,craneZ],.5,'#d5b26d');
+  b.beam([craneX+side*3,26,craneZ],[craneX,31,craneZ],.28,'#e3cb91');
+ }
+ b.beam([craneX-29,31,craneZ],[craneX+17,31,craneZ],.35,'#f0c276');
+ b.beam([craneX,31,craneZ],[craneX-22,17,craneZ],.18,'#b0c4d5');
+ b.beam([craneX-22,17,craneZ],[craneX-22,8,craneZ],.095,'#f7dfc4');
+ for(let k=0;k<4;k++)b.box(79+(k%2)*6,.02,106+Math.floor(k/2)*6,5,2.5,4.5,k%2?'#b9769a':'#427e9d');
+ for(let j=0;j<8;j++){
+  const pierZ=77+j*5.2;
+  b.cylinder([66,-1,pierZ],[66,2.4,pierZ],.34,'#9ba6ac',7);
+  b.box(66,2.4,pierZ,.85,.20,.84,j%2?'#e9cf96':'#72e6d9');
+ }
  // Alternating neon lane chevrons read as physical forward motion at speed.
  for(let z=-73;z<48;z+=12)for(const side of [-1,1]){
   const xx=side*5.9;
@@ -492,9 +543,10 @@ export class WebGLWorld{
  const yaw=this.cameraYaw;const forward=[Math.sin(yaw),Math.cos(yaw)];
  // The old 13.8m chase camera made Rylee tiny on a phone. Keep a visible
  // 3D hero silhouette, but give faster cars enough forward road preview.
- const range=player.vehicle==='car'?11.6:7.9;
- const target=[player.x,player.y+1.48,player.z];
- const unoccluded=[player.x-forward[0]*range,player.y+4.65+range*Math.sin(this.cameraPitch),player.z-forward[1]*range];
+ const pace=Math.hypot(player.vx||0,player.vz||0);
+ const profile=cinematicCameraProfile(player.vehicle,pace);
+ const target=[player.x,player.y+profile.targetHeight,player.z];
+ const unoccluded=[player.x-forward[0]*profile.distance,player.y+profile.height+profile.distance*Math.sin(this.cameraPitch),player.z-forward[1]*profile.distance];
  const desired=cameraSafePosition(target,unoccluded,this.obstacles);
  // Avoid smoothing through a wall: interpolate, then recheck the interpolated segment.
  const cameraDt=this.lastCameraTime===null?1/60:Math.max(0,t-this.lastCameraTime);
@@ -503,7 +555,7 @@ export class WebGLWorld{
  const eased=this.camera.map((v,i)=>lerp(v,desired[i],follow));
  const visible=cameraSafePosition(target,eased,this.obstacles);
  this.camera=visible;
- gl.uniformMatrix4fv(this.uProj,false,matPerspective(62*Math.PI/180,this.canvas.width/this.canvas.height,.1,310));gl.uniformMatrix4fv(this.uView,false,lookAt(this.camera,target));
+ gl.uniformMatrix4fv(this.uProj,false,matPerspective(profile.fov*Math.PI/180,this.canvas.width/this.canvas.height,.1,310));gl.uniformMatrix4fv(this.uView,false,lookAt(this.camera,target));
  const sunAngle=this.timeOfDay*TAU;
  // Sunrise/sunset warmth moves as the in-world clock advances, night uses a dim cool key.
  const daylight=Math.max(0,Math.cos(sunAngle));
@@ -530,6 +582,15 @@ export class WebGLWorld{
  if(player.chaseActive&&player.z>-18){
   const patrolX=-24+Math.sin(t*.22)*19,patrolZ=69+Math.cos(t*.19)*11;
   if(Math.hypot(patrolX-px,patrolZ-pz)<125)buildHelicopterMesh(dynamic,{x:patrolX,y:26+Math.sin(t*.45)*1.5,z:patrolZ,t});
+ }
+ // Speed-dependent skate road streaks and police strobe spill are physical
+ // ground geometry, bounded to a handful of quads on the mobile GPU.
+ if(player.chaseActive && Math.hypot(player.x-player.policeX,player.z-player.policeZ)<55){
+  const flash=Math.floor(t*6)%2===0;
+  for(const side of [-1,1]){
+   dynamic.disc(player.policeX+side*1.15,this.elevation(player.policeX,player.policeZ)+.018,player.policeZ,1.25,2.3,
+    flash=== (side>0)?'#d65d8b':'#309de3',8);
+  }
  }
  // Road traffic and chase police.
  for(const [i,v] of this.traffic.slice(0,Math.round(this.traffic.length*(config.trafficDensity??.65))).entries()){

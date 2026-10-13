@@ -7,7 +7,7 @@ import path from 'node:path';
 import net from 'node:net';
 import { DatabaseSync } from 'node:sqlite';
 import { mission,pickupCoords } from '../megarush-api.mjs';
-import { updatePlayer, cameraRelativeInput, MeshBuilder, WebGLWorld, buildCharacterMesh, buildVehicleMesh, trafficPosition, advanceFixedPhysics, cameraSafePosition, onHarborRoad, atHarbor, HARBOR_FINISH, cameraFollowFactor } from '../public/megarush/engine.js';
+import { updatePlayer, cameraRelativeInput, MeshBuilder, WebGLWorld, buildCharacterMesh, buildVehicleMesh, trafficPosition, advanceFixedPhysics, cameraSafePosition, onHarborRoad, atHarbor, HARBOR_FINISH, cameraFollowFactor, cinematicCameraProfile } from '../public/megarush/engine.js';
 
 function reservePort() { return new Promise(resolve => {const server=net.createServer();server.listen(0,'127.0.0.1',()=>{const port=server.address().port;server.close(()=>resolve(port))})}) }
 
@@ -440,8 +440,8 @@ test('Third-person camera follows by elapsed time rather than render FPS',()=>{
 
 test('Closer third-person phone camera, faster board and proportional analog steering are shipped together',()=>{
  const source=readFileSync(new URL('../public/megarush/engine.js',import.meta.url),'utf8');
- assert.match(source,/vehicle==='car'\?11\.6:7\.9/);
- assert.match(source,/matPerspective\(62\*Math\.PI\/180/);
+ assert.match(source,/cinematicCameraProfile\(player\.vehicle,pace\)/);
+ assert.match(source,/matPerspective\(profile\.fov\*Math\.PI\/180/);
  assert.match(source,/vehicle==='skate'\?13\.8/);
  const world={weather:'clear',collide:()=>false,elevation:()=>0,traffic:[]};
  const player=()=>({x:0,y:0,z:0,vx:0,vy:0,vz:0,angle:0,onGround:true,vehicle:'skate',heat:0,hp:3,crashCooldown:0});
@@ -521,4 +521,33 @@ test('Neon shopfronts and harbor promenade preserve driving corridor and origina
  assert.match(css,/v0\.5\.3 — action-first phone framing/);
  const app=readFileSync(new URL('../logic.mjs',import.meta.url),'utf8');
  assert.match(app,/number/);assert.match(app,/line/);assert.match(app,/slide/);assert.match(app,/memory/);
+});
+
+test('Cinematic camera keeps 3D hero prominent without sacrificing fast chase visibility',()=>{
+ const idle=cinematicCameraProfile('skate',0);
+ const fast=cinematicCameraProfile('skate',16);
+ const car=cinematicCameraProfile('car',21.5);
+ const walk=cinematicCameraProfile('foot',0);
+ assert.ok(idle.distance>=5.5&&idle.distance<7,'phone framing is close enough for avatar details');
+ assert.ok(fast.distance>idle.distance&&fast.fov>idle.fov,'fast skating exposes more roadway');
+ assert.ok(car.distance>fast.distance&&car.height>fast.height,'car camera preserves longer driving sightline');
+ assert.ok(walk.distance<idle.distance,'standing rider is not a tiny dot');
+ for(const profile of [idle,fast,car,walk,cinematicCameraProfile('skate',Infinity)]){
+  assert.ok(Object.values(profile).every(Number.isFinite),'camera profile cannot produce NaNs');
+  assert.ok(profile.fov>=54&&profile.fov<=67,'phone FOV bounded');
+ }
+});
+
+test('Port-world architectural details and rider lean remain physically generated WebGL meshes',()=>{
+ const source=readFileSync(new URL('../public/megarush/engine.js',import.meta.url),'utf8');
+ assert.match(source,/const craneX=83,craneZ=91/);
+ assert.match(source,/recessed shopfronts, reflective glass, signs/);
+ assert.match(source,/mesh\.rotateRange\(bodyStart,at\(0,\.95,0\)/,'only rider body leans');
+ const moving={x:0,y:0,z:0,angle:0,vx:0,vy:0,vz:12,onGround:true,vehicle:'skate',character:'rylee',skin:'default',trickTimer:0};
+ const noLean=new MeshBuilder(),withLean=new MeshBuilder();
+ buildCharacterMesh(noLean,{...moving,vz:0},.22);
+ buildCharacterMesh(withLean,moving,.22);
+ assert.equal(noLean.vertices.length,withLean.vertices.length,'lean does not create duplicate geometry');
+ assert.ok(withLean.vertices.every(Number.isFinite),'motion pose keeps positions and normals valid');
+ assert.notDeepEqual(noLean.vertices.slice(-200),withLean.vertices.slice(-200),'backpack and upper body lean visibly');
 });

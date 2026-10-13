@@ -1,3 +1,10 @@
+## Iteration v0.5.4 — action camera, rider carving and detailed working harbor (2026-10-13)
+
+- Replace tiny/far rigid chase camera with a pure, bounded, speed-responsive camera profile; skateboard and on-foot views start closer, fast skating opens road sightline, car chase maintains a longer view. Camera yaw/analog steering and collision-protected third person remain unchanged.
+- Animate rider body lean as actual 3D vertex/normals rotation independently of the skateboard, ground contact, and character physics.
+- Add geometry-only harbor crane, containers, marina moorings, shopfront canopies, storefront glass and balcony edge lights. No remote image assets or copied game art; this remains stylized procedural 3D, **not** reference-equivalent photorealistic art.
+- Maintain shared PUZUNIVO accounts, admin, original four games and existing SQLite records. Camera and asset regression tests are in the same project; device GPU QA and signed APK are still pending.
+
 ## Iteration v0.5.3 — volumetric-feel material pass and harbor street dressing (2026-10-13)
 
 - Same WebGL2 render pass now carries world-space vertex coordinates and original material colors into a lightweight fragment shader for animated sea shimmer, damp road highlight, emissive neon signage and actual police-vehicle proximity illumination. This is stylized procedural lighting, **not** ray-traced reflection, photorealistic textures or a copied reference image.

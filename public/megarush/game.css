@@ -105,3 +105,15 @@ body:has(#hud:not(.hidden)) .touch .joystick{background:radial-gradient(circle,#
 body:has(#hud:not(.hidden)) .touch .actionpad button{border-color:#9ec7d588;box-shadow:inset 0 1px 0 #ffffff25,0 5px 14px #000a}
 body:has(#hud:not(.hidden)) .touch .actionpad .sprint{border:2px solid #4df0b7;box-shadow:inset 0 1px 0 #a2ffce64,0 0 14px #18e6a640}
 #world[data-sky="sunset"]{filter:saturate(1.17) contrast(1.055)}
+
+/* v0.5.4: cinematic focus, real mission takes visual priority over technical badges. */
+body:has(#hud:not(.hidden)) .hud-cluster{gap:4px}
+body:has(#hud:not(.hidden)) #fps{opacity:.65;font-size:8px}
+body:has(#hud:not(.hidden)) .waypoint{border:1px solid #fbd78ba6;box-shadow:0 0 18px #fbb7592c,0 5px 18px #0008}
+body:has(#hud:not(.hidden)) .objective.pursuit{background:linear-gradient(100deg,#51172ceb,#1d213ae8);border-color:#f35b7a}
+body:has(#hud:not(.hidden)) .speedometer strong{font-variant-numeric:tabular-nums;text-shadow:0 3px 10px #000,0 0 12px #89e5ef90}
+@media (orientation:landscape) and (max-height:530px){
+ body:has(#hud:not(.hidden)) .top{opacity:.83}
+ body:has(#hud:not(.hidden)) .mission{width:175px;max-width:28vw}
+ body:has(#hud:not(.hidden)) .objective{top:27px}
+}
