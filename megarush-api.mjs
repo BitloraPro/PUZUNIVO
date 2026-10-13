@@ -1,5 +1,6 @@
 // MegaRush endpoints extend PUZUNIVO's existing session and SQLite database.
 // Virtual-only currency; no withdrawals, gambling, real-money rewards or client ad claims.
+const HARBOR_CHECKPOINT=Object.freeze({x:0,z:112,radius:9});
 const CHAPTERS = [
   'Neon Downtown','Skyline Parkour','Coastal Speedway','Boardwalk Rush','Pinewood Trails',
   'Highland Pass','River Run','Sunset Harbor','Storm City','Multiverse Summit',
@@ -58,7 +59,7 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
  if(!sessionCols.has('pickup_count'))db.exec('ALTER TABLE mr_sessions ADD COLUMN pickup_count INTEGER NOT NULL DEFAULT 12');
  // Same authoritative session row retains driving state, damage and third-person camera.
  // Add columns in place; old database rows remain readable with safe defaults.
- const sessionStateColumns={vehicle:"TEXT NOT NULL DEFAULT 'foot'",hp:'INTEGER NOT NULL DEFAULT 3',heat:'REAL NOT NULL DEFAULT 0',facing:'REAL NOT NULL DEFAULT 0',police_x:'REAL NOT NULL DEFAULT -12',police_z:'REAL NOT NULL DEFAULT 20',view_yaw:'REAL NOT NULL DEFAULT 0',chase_active:'INTEGER NOT NULL DEFAULT 0',car_slot:'INTEGER NOT NULL DEFAULT -1'};
+ const sessionStateColumns={vehicle:"TEXT NOT NULL DEFAULT 'foot'",hp:'INTEGER NOT NULL DEFAULT 3',heat:'REAL NOT NULL DEFAULT 0',facing:'REAL NOT NULL DEFAULT 0',police_x:'REAL NOT NULL DEFAULT -12',police_z:'REAL NOT NULL DEFAULT 20',view_yaw:'REAL NOT NULL DEFAULT 0',chase_active:'INTEGER NOT NULL DEFAULT 0',car_slot:'INTEGER NOT NULL DEFAULT -1',harbor_reached:'INTEGER NOT NULL DEFAULT 0'};
  for(const [name,type] of Object.entries(sessionStateColumns))if(!sessionCols.has(name))db.exec(`ALTER TABLE mr_sessions ADD COLUMN ${name} ${type}`);
  for(const [k,v] of Object.entries(DEFAULTS))run('INSERT OR IGNORE INTO mr_settings VALUES(?,?)',k,JSON.stringify(v));
  const settings=()=>Object.fromEntries(all('SELECT key,value FROM mr_settings').map(r=>[r.key,JSON.parse(r.value)]));
@@ -105,7 +106,7 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
      }
      const collectedIds=all('SELECT item_id FROM mr_pickups WHERE user_id=? AND level=?',user.id,s.level).map(r=>r.item_id);
      return json(res,200,{active:true,id:s.id,level:s.level,character:s.character,
-       x:s.x,z:s.z,state:{vehicle:s.vehicle,hp:s.hp,heat:s.heat,angle:s.facing,policeX:s.police_x,policeZ:s.police_z,cameraYaw:s.view_yaw,chaseActive:!!s.chase_active,carSlot:s.car_slot},
+       x:s.x,z:s.z,state:{vehicle:s.vehicle,hp:s.hp,heat:s.heat,angle:s.facing,policeX:s.police_x,policeZ:s.police_z,cameraYaw:s.view_yaw,chaseActive:!!s.chase_active,carSlot:s.car_slot},harborReached:!!s.harbor_reached,
        mission:{...mission(s.level),targetCollectibles:s.required_orbs},
        pickups:pickupCoords(s.level,{},s.pickup_count),collectedIds});
    }
@@ -116,9 +117,9 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
      const p=progress(user);
      if(all('SELECT id FROM mr_sessions WHERE user_id=? AND ended_at IS NULL',user.id).length>=3)run('UPDATE mr_sessions SET ended_at=? WHERE user_id=? AND ended_at IS NULL',now(),user.id);
      const id=uuid(),t=now(),snapshot=settings(),runMission=mission(p.level,snapshot),runPickups=pickupCoords(p.level,snapshot);
-     run('INSERT INTO mr_sessions(id,user_id,level,character,started_at,last_seen,x,z,required_orbs,pickup_count) VALUES(?,?,?,?,?,?,0,0,?,?)',id,user.id,p.level,b.character,t,t,runMission.targetCollectibles,runPickups.length);
+     run('INSERT INTO mr_sessions(id,user_id,level,character,started_at,last_seen,x,z,required_orbs,pickup_count,vehicle,heat,chase_active,police_x,police_z) VALUES(?,?,?,?,?,?,0,0,?,?,?,?,1,-3,-20)',id,user.id,p.level,b.character,t,t,runMission.targetCollectibles,runPickups.length,'skate',.92);
      run('UPDATE mr_progress SET equipped_character=?,updated_at=? WHERE user_id=?',b.character,t,user.id);
-     return json(res,201,{id,level:p.level,mission:runMission,pickups:runPickups,collectedIds:all('SELECT item_id FROM mr_pickups WHERE user_id=? AND level=?',user.id,p.level).map(r=>r.item_id)});
+     return json(res,201,{id,level:p.level,mission:runMission,harborReached:false,pickups:runPickups,collectedIds:all('SELECT item_id FROM mr_pickups WHERE user_id=? AND level=?',user.id,p.level).map(r=>r.item_id)});
    }
    if(route==='/api/megarush/session/heartbeat'&&method==='POST'){
      checkPlayer(user);throttle('mr-tick-'+user.id,150);
@@ -134,7 +135,12 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
        run('UPDATE mr_sessions SET x=?,z=?,last_seen=?,vehicle=?,hp=?,heat=?,facing=?,police_x=?,police_z=?,view_yaw=?,chase_active=?,car_slot=? WHERE id=?',
          x,z,t,raw.vehicle,raw.hp,raw.heat,raw.angle,raw.policeX,raw.policeZ,raw.cameraYaw,Number(raw.chaseActive),raw.carSlot,s.id);
      }else run('UPDATE mr_sessions SET x=?,z=?,last_seen=? WHERE id=?',x,z,t,s.id);
-     return json(res,200,{ok:true});
+     // Only the server may confirm a harbor escape. The client cannot award itself
+     // the checkpoint through a submitted `harborReached` flag or teleport.
+     const nearHarbor=Math.hypot(x-HARBOR_CHECKPOINT.x,z-HARBOR_CHECKPOINT.z)<HARBOR_CHECKPOINT.radius;
+     const eligible=!s.harbor_reached&&s.chase_active===1&&raw?.chaseActive===true&&nearHarbor&&t-s.started_at>=7000;
+     if(eligible)run('UPDATE mr_sessions SET harbor_reached=1,chase_active=0,heat=0 WHERE id=? AND harbor_reached=0',s.id);
+     return json(res,200,{ok:true,harborReached:!!s.harbor_reached||eligible});
    }
    if(route==='/api/megarush/pickup'&&method==='POST'){
      checkPlayer(user);throttle('mr-pickup-'+user.id,100);
@@ -156,7 +162,7 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
      if(s.level!==p.level)throw fail(409,'Level has changed');
      const count=one('SELECT count(*) n FROM mr_pickups WHERE user_id=? AND level=?',user.id,p.level).n;
      const required=s.required_orbs;
-     if(count<required)throw fail(409,'Collect '+required+' orbs before finishing this level');
+     if(count<required&&!s.harbor_reached)throw fail(409,'Reach Harbor or collect '+required+' orbs to finish this level');
      if(now()-s.started_at<12000)throw fail(409,'Run completed implausibly quickly');
      const next=Math.min(500,p.level+1);
      db.exec('BEGIN IMMEDIATE');

@@ -559,11 +559,18 @@ export function updatePlayer(p,controls,world,dt){dt=Math.min(dt,.05);p.crashCoo
  const friction=world.weather==='rain'?.78:1;const accel=p.vehicle==='car'?4.0:8.3;
  p.vx=lerp(p.vx,dx*speed*inputMag*friction,Math.min(1,dt*accel));p.vz=lerp(p.vz,dz*speed*inputMag*friction,Math.min(1,dt*accel));
  const nx=clamp(p.x+p.vx*dt,-120,120),nz=clamp(p.z+p.vz*dt,-118,121);
- const building=world.collide(nx,nz,p.y);
- const shoreline=p.vehicle==='car'&&nz>64&&!onHarborRoad(nx,nz);
- if(!building&&!shoreline){p.x=nx;p.z=nz}
- else {p.vx*=.05;p.vz*=.05;
-  if(p.vehicle==='car'&&p.crashCooldown<=0){p.hp=Math.max(0,p.hp-1);p.crashCooldown=2;p.heat=Math.min(1,p.heat+.15)}
+ // Axis-separated swept movement: glancing against a building must not freeze
+ // the player's forward motion. This is especially important with touch steering.
+ // Only blocked axes lose speed; vehicles still take collision damage once.
+ const blocks=(x,z)=>world.collide(x,z,p.y)||(p.vehicle==='car'&&z>64&&!onHarborRoad(x,z));
+ let blocked=false;
+ if(!blocks(nx,nz)){p.x=nx;p.z=nz;}
+ else{
+  // Resolve X first, then test Z against the updated X. Precomputing both
+  // from the old position permits diagonal movement INSIDE a corner.
+  if(!blocks(nx,p.z))p.x=nx;else{p.vx=0;blocked=true;}
+  if(!blocks(p.x,nz))p.z=nz;else{p.vz=0;blocked=true;}
+  if(blocked&&p.vehicle==='car'&&p.crashCooldown<=0){p.hp=Math.max(0,p.hp-1);p.crashCooldown=2;p.heat=Math.min(1,p.heat+.15)}
  }
  const water=p.z>66&&!onHarborRoad(p.x,p.z);
  if(water&&p.vehicle!=='car'){p.vehicle='swim';p.vy=clamp(p.vy,-2,2);p.y=lerp(p.y,-.5,.06);if(controls.jump)p.y=Math.min(1,p.y+dt*2);if(controls.dive)p.y=Math.max(-2,p.y-dt*1.9);}

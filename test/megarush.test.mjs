@@ -129,6 +129,31 @@ test('MegaRush uses existing PUZUNIVO session, checks anti-duplicate purchases a
  assert.equal((await request('/api/megarush/session/active')).body.id,nextRun.body.id);
  assert.ok(nextRun.body.mission.targetCollectibles>session.body.mission.targetCollectibles);
  assert.ok(nextRun.body.pickups.length>=nextRun.body.mission.targetCollectibles);
+ // New Harbor Chase begins on a skateboard in a real persisted pursuit.
+ const fresh=await request('/api/megarush/session/active');
+ assert.equal(fresh.body.state.vehicle,'skate');
+ assert.equal(fresh.body.state.chaseActive,true);
+ assert.equal(fresh.body.harborReached,false);
+ const state={...fresh.body.state};
+ // Fake long-distance teleport cannot earn the server-side checkpoint.
+ assert.equal((await request('/api/megarush/session/heartbeat',{id:nextRun.body.id,x:0,z:112,state})).status,400);
+ assert.equal((await request('/api/megarush/level/complete',{sessionId:nextRun.body.id})).status,409);
+ // Fixture: after a legitimate player has traveled the boulevard for 15s,
+ // a short final step into Harbor meets bounded distance and elapsed time.
+ const db3=new DatabaseSync(path.join(temp,'puzunivo.sqlite'));
+ db3.prepare('UPDATE mr_sessions SET x=0,z=105,started_at=?,last_seen=? WHERE id=?')
+   .run(Date.now()-15000,Date.now()-1200,nextRun.body.id);
+ db3.close();
+ const verified=await request('/api/megarush/session/heartbeat',{id:nextRun.body.id,x:0,z:112,state:{...state,harborReached:true}});
+ assert.equal(verified.status,200);
+ assert.equal(verified.body.harborReached,true);
+ const checkpoint=await request('/api/megarush/session/active');
+ assert.equal(checkpoint.body.harborReached,true);
+ assert.equal(checkpoint.body.state.chaseActive,false);
+ assert.equal((await request('/api/megarush/level/complete',{sessionId:nextRun.body.id})).status,200,
+   'verified Harbor Chase can complete without mandatory side-quest shards');
+ assert.equal((await request('/api/megarush/level/complete',{sessionId:nextRun.body.id})).status,409,
+   'replaying the already completed run cannot award currency twice');
 });
 
 test('Sprint increases traversal speed without altering normal movement and police collision damages once per cooldown',()=>{
@@ -458,5 +483,18 @@ test('World-space waypoints map to correct screen-side arrows at all camera orbi
  for(let i=0;i<helicopter.vertices.length;i+=9){
   assert.ok(helicopter.vertices.slice(i,i+9).every(Number.isFinite));
   assert.ok(Math.abs(Math.hypot(...helicopter.vertices.slice(i+3,i+6))-1)<.003);
+ }
+});
+
+test('Diagonal corner collisions slide along walls without entering the solid building',()=>{
+ const world={weather:'clear',collide:(x,z)=>x>1&&z>1,elevation:()=>0,traffic:[]};
+ const p={x:.98,y:0,z:.98,vx:0,vy:0,vz:0,angle:0,onGround:true,vehicle:'foot',heat:0,hp:3,crashCooldown:0};
+ const before={x:p.x,z:p.z};
+ updatePlayer(p,{x:1,z:1},world,.05);
+ assert.equal(Boolean(world.collide(p.x,p.z)),false,'player must not enter a building corner');
+ assert.ok(p.x>before.x||p.z>before.z,'unblocked axis must retain movement');
+ for(let i=0;i<20;i++){
+  updatePlayer(p,{x:1,z:1},world,.05);
+  assert.equal(Boolean(world.collide(p.x,p.z)),false,'wall sliding remains collision-safe');
  }
 });

@@ -1,8 +1,14 @@
 # PUZUNIVO — Independent Brain Games Platform
 
-**Status (13 October 2026, v0.5.1):** Original four PUZUNIVO puzzle games and the fifth MegaRush WebGL2 landscape **vertical slice** are in this source tree. 39 Node/API/physics tests pass locally. Android native wrapper source and a guarded APK build workflow are included, **but there is no verified built APK, live server deployment, actual Android GPU test or cinematic-quality production assets yet**. The separately hosted Apper application has not been updated by this GitHub code push. The game depends on a compatible, owner-deployed HTTPS Node 22 backend; a debug APK pointing to the wrong site is intentionally blocked by CI.
+**Status (13 October 2026, v0.5.2):** Original four PUZUNIVO puzzle games and the fifth MegaRush WebGL2 landscape **vertical slice** are in this source tree. 40 Node/API/physics tests pass locally. Android native wrapper source and a guarded APK build workflow are included, **but there is no verified built APK, live server deployment, actual Android GPU test or cinematic-quality production assets yet**. The separately hosted Apper application has not been updated by this GitHub code push. The game depends on a compatible, owner-deployed HTTPS Node 22 backend; a debug APK pointing to the wrong site is intentionally blocked by CI.
 
 PUZUNIVO is an original puzzle platform, independent from Bitlora/Bitlora Pro. Includes an English-language mobile-friendly web application plus separate web administration dashboard. No gambling, cash wallets, KYC, crypto rewards or fabricated live business metrics.
+
+## MegaRush gameplay v0.5.2 — server-verified Harbor finish and wall sliding
+
+The Harbor Escape is now a true **server-confirmed** main mission: a verified skate chase reaches the actual Harbor checkpoint and may finish the zone without collecting optional light shards. The Node/SQLite session tracks the checkpoint in the *same* `mr_sessions` record, validates bounded position/time, prevents replayed awards, and migrates the original session table additively; existing puzzle games, accounts, and Admin are unchanged. New runs save their initial skate/police pursuit state immediately so an app reload does not silently cancel it. Player movement slides along building walls rather than freezing or entering diagonal corners.
+
+This remains a stylized WebGL2 playtest, **not** a match for the detailed cinematic concept illustration. Tests do not replace a physical Android GPU QA pass, a deployed HTTPS backend, native AdMob verification, or a real APK build.
 
 ## MegaRush gameplay v0.5.1 — skate-first harbor pursuit
 

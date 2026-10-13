@@ -1,3 +1,10 @@
+## Iteration v0.5.2 — server-authoritative harbor escape (2026-10-13)
+
+- The actual Harbor gate can **complete the zone**: server records `harbor_reached` only for eligible active chase runs, within 9m of the real finish, after time and per-heartbeat travel bounds; unverified/teleported clients receive no checkpoint and cannot claim zone rewards. Original shard collection remains a valid alternative. No fake instant payout.
+- In-place `mr_sessions` migration adds one checkpoint flag without touching original PUZUNIVO tables. New runs persist `skate` + chase from session creation (not just temporary client defaults); reload, pause and session resume keep authoritative state.
+- WebGL2 game waits for server checkpoint confirmation before changing mission HUD/unlocking Finish Zone. Player collision solves axes sequentially to slide along walls instead of freezing at corners or clipping diagonally into buildings.
+- **40/40** Node/API/physics/mock-WebGL2 tests pass locally; still NO verified live Apper deployment, public HTTPS host, Android GPU QA or compiled APK; visual fidelity is still stylized low-/mid-poly.
+
 ## Iteration v0.5.1 — skate-first Harbor Chase and in-engine coastal set dressing (2026-10-13)
 
 - First **new** MegaRush run now starts with Rylee on her skateboard and a genuine active police chase. A 5-second initial crash-damage grace period lets the player accelerate. Existing saved runs preserve their authoritative vehicle/heat/chase data and are **not** reset on upgrade. The harbor remains a traversable world checkpoint, and afterwards collectible progression continues against the unchanged PUZUNIVO backend.

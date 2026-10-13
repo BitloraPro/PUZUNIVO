@@ -3,7 +3,7 @@ import {nativeAdsAvailable,rewardedRevive,interstitialBetweenChapters} from './n
 const $=id=>document.getElementById(id);
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const characters=[{id:'rylee',name:'Rylee',desc:'Skate Hero',icon:'🛹'},{id:'zara',name:'Zara',desc:'Parkour Ace',icon:'🏃'},{id:'leo',name:'Leo',desc:'BMX Rider',icon:'🚲'}];
-let jumpTimer=0,climbTimer=0,physicsCarry=0;let liveOpsTimer=null;let resumeGraphicsAfterRestore=false;let world,boot,session=null,selected='rylee',activeTab='',player=null,running=false,frameId=0,last=performance.now(),startAt=0,control={x:0,z:0,jump:false,dive:false,climb:false,sprint:false},keys=new Set(),analog={x:0,z:0},gameTime=0,collectibles=[],sentPickups=new Set(),pickupsReceived=0,heartbeatPromise=null,missionDone=false,lastHeartbeat=0,toastTimer=0,radio=false,hitMessage='',frameSamples=0,fpsElapsed=0,renderFps=0;
+let jumpTimer=0,climbTimer=0,physicsCarry=0,checkpointPending=false,harborEscaped=false;let liveOpsTimer=null;let resumeGraphicsAfterRestore=false;let world,boot,session=null,selected='rylee',activeTab='',player=null,running=false,frameId=0,last=performance.now(),startAt=0,control={x:0,z:0,jump:false,dive:false,climb:false,sprint:false},keys=new Set(),analog={x:0,z:0},gameTime=0,collectibles=[],sentPickups=new Set(),pickupsReceived=0,heartbeatPromise=null,missionDone=false,lastHeartbeat=0,toastTimer=0,radio=false,hitMessage='',frameSamples=0,fpsElapsed=0,renderFps=0;
 const btns={play:$('play'),menu:$('menu-btn'),finish:$('finish')};
 async function api(path,body,base='/api/megarush/'){
  const res=await fetch(base+path,{method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json'},credentials:'same-origin',body:body===undefined?undefined:JSON.stringify(body)});
@@ -55,7 +55,7 @@ async function start(){
  const s=resumed?saved:await api('session/start',{character:selected});
  session=s.id;boot.level=s.level;boot.mission=s.mission;
  if(resumed)selected=s.character;
- collectibles=s.pickups.map(p=>({...p,collected:(s.collectedIds||[]).includes(p.id)}));sentPickups=new Set(s.collectedIds||[]);pickupsReceived=(s.collectedIds||[]).length;missionDone=false;
+ collectibles=s.pickups.map(p=>({...p,collected:(s.collectedIds||[]).includes(p.id)}));sentPickups=new Set(s.collectedIds||[]);pickupsReceived=(s.collectedIds||[]).length;missionDone=false;harborEscaped=!!s.harborReached;checkpointPending=false;
  const savedState=resumed?s.state||{}:{};
  player={x:resumed?s.x:0,y:0,z:resumed?s.z:0,vx:0,vy:0,vz:0,onGround:true,character:selected,skin:boot.equipped?.skin||'default',
   angle:savedState.angle??0,hp:savedState.hp??3,vehicle:savedState.vehicle??(resumed?'foot':'skate'),
@@ -181,10 +181,16 @@ function loop(timestamp){if(!running||!player||!world){frameId=0;return;}frameId
  });
  physicsCarry=stepped.carry;
  if(crash){running=false;showPanel('crash');flash('💥 Crash! Choose a free or optional rewarded revive.');return;}
- if(player.chaseActive&&atHarbor(player.x,player.z)){
-  player.chaseActive=false;player.heat=0;player.policeX=-12;player.policeZ=20;
-  flash('🏁 HARBOR REACHED — You escaped the chase!');sound(920,.19);
-  heartbeat(true).catch(()=>{}); // No invented cash/XP prize; store only the real checkpoint.
+ // The finish is real only when the existing PUZUNIVO server acknowledges it.
+ // Keep the chase alive while a pending or failed request is retried.
+ if(player.chaseActive&&!harborEscaped&&atHarbor(player.x,player.z)&&!checkpointPending){
+  checkpointPending=true;
+  heartbeat(true).then(result=>{
+   if(result?.harborReached){
+    harborEscaped=true;player.chaseActive=false;player.heat=0;player.policeX=-12;player.policeZ=20;
+    flash('🏁 HARBOR ESCAPE VERIFIED — Finish your zone!');sound(920,.19);
+   }
+  }).catch(e=>flash('Checkpoint sync: '+e.message)).finally(()=>{checkpointPending=false});
  }
  for(const p of collectibles){if(!p.collected&&!sentPickups.has(p.id)&&Math.hypot(player.x-p.x,player.z-p.z)<2.15)pickup(p)}
  if(gameTime-lastHeartbeat>1.35){lastHeartbeat=gameTime;heartbeat().catch(()=>{})}
@@ -196,16 +202,18 @@ function loop(timestamp){if(!running||!player||!world){frameId=0;return;}frameId
  const chaseDistance=Math.hypot(player.x-HARBOR_FINISH.x,player.z-HARBOR_FINISH.z);
  // A harbor chase must display harbor progress, not a misleading full shard bar.
  const chaseRatio=Math.max(0,Math.min(1,1-chaseDistance/112));
- $('mission-fill').style.width=Math.round((player.chaseActive?chaseRatio:ratio)*100)+'%';
- $('mission-progress').textContent=pickupsReceived+' / '+boot.mission.targetCollectibles+' shards';btns.finish.disabled=ratio<1;
+ $('mission-fill').style.width=Math.round((harborEscaped?1:player.chaseActive?chaseRatio:ratio)*100)+'%';
+ $('mission-progress').textContent=pickupsReceived+' / '+boot.mission.targetCollectibles+' shards';btns.finish.disabled=!harborEscaped&&ratio<1;
  if(gameTime-miniLast>.1){drawMiniMap();miniLast=gameTime;}
- const closest=player.chaseActive?HARBOR_FINISH:collectibles.filter(p=>!p.collected).sort((a,b)=>Math.hypot(a.x-player.x,a.z-player.z)-Math.hypot(b.x-player.x,b.z-player.z))[0];
+ const closest=harborEscaped?null:player.chaseActive?HARBOR_FINISH:collectibles.filter(p=>!p.collected).sort((a,b)=>Math.hypot(a.x-player.x,a.z-player.z)-Math.hypot(b.x-player.x,b.z-player.z))[0];
  if(closest){const dx=closest.x-player.x,dz=closest.z-player.z;const distance=Math.round(Math.hypot(dx,dz));
   const arrowRotation=waypointArrowRotation(dx,dz,world.cameraYaw);
   $('waypoint').textContent=player.chaseActive?`◆ REACH HARBOR · ${distance}m`:`✦ NEXT SHARD · ${distance}m`;
   $('waypoint-arrow').style.transform=`rotate(${arrowRotation}rad)`;
- }else{$('waypoint').textContent='✦ ALL SHARDS FOUND';$('waypoint-arrow').style.transform='none';}
- if(player.chaseActive){$('mission-title').textContent='ESCAPE THE CHASE';$('mission-progress').textContent=`Reach the Harbor · ${Math.round(Math.hypot(player.x-HARBOR_FINISH.x,player.z-HARBOR_FINISH.z))}m`;
+ }else{$('waypoint').textContent=harborEscaped?'◆ HARBOR SECURED':'✦ ALL SHARDS FOUND';$('waypoint-arrow').style.transform='none';}
+ if(harborEscaped){$('mission-title').textContent='HARBOR ESCAPE COMPLETE';$('mission-progress').textContent='Checkpoint verified · Finish Zone';
+  $('prompt').textContent='🏁 Escape verified by PUZUNIVO · Zone ready';btns.finish.disabled=false;
+ }else if(player.chaseActive){$('mission-title').textContent='ESCAPE THE CHASE';$('mission-progress').textContent=`Reach the Harbor · ${Math.round(Math.hypot(player.x-HARBOR_FINISH.x,player.z-HARBOR_FINISH.z))}m`;
   $('prompt').textContent='🚨 ESCAPE THE CHASE — Skate the boulevard • Harbor checkpoint ahead';btns.finish.disabled=true;
  }else{$('mission-title').textContent=`Collect ${boot.mission.targetCollectibles} light shards`;
   $('mission-progress').textContent=pickupsReceived+' / '+boot.mission.targetCollectibles+' shards';btns.finish.disabled=ratio<1;
