@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="puzunivo_server_url">https://example.invalid</string>
+</resources>

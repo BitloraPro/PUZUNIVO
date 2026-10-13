@@ -1,0 +1,90 @@
+name: Build PUZUNIVO Android Debug APK
+on:
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: 'Your already-running PUZUNIVO backend HTTPS origin (not the Apper preview unless compatible)'
+        required: true
+        type: string
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify HTTPS production backend origin
+        env:
+          GAME_ORIGIN: ${{ inputs.server_url }}
+        run: |
+          python3 - <<'PYCODE'
+          import os,urllib.parse,xml.sax.saxutils,pathlib
+          url=os.environ['GAME_ORIGIN'].strip();parsed=urllib.parse.urlparse(url)
+          if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password or parsed.path not in ('','/') or parsed.query or parsed.fragment or parsed.hostname.endswith('.invalid'):
+              raise SystemExit('Specify an HTTPS origin such as https://games.yourdomain.com (no paths, credentials or queries)')
+          path=pathlib.Path('mobile/android-native/app/src/main/res/values/strings.xml')
+          path.write_text('<?xml version="1.0" encoding="utf-8"?><resources><string name="puzunivo_server_url">'+xml.sax.saxutils.escape(url)+'</string></resources>')
+          print('Validated HTTPS origin (no credentials embedded)')
+          PYCODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test original PUZUNIVO and MegaRush code
+        run: |
+          npm run check
+          npm test
+      - name: Confirm configured host serves the real MegaRush API and game
+        env:
+          GAME_ORIGIN: ${{ inputs.server_url }}
+        run: |
+          python3 - <<'PYCODE'
+          import json,os,urllib.request
+          origin=os.environ['GAME_ORIGIN'].rstrip('/')
+          def get(path,content_type):
+              request=urllib.request.Request(origin+path, headers={'User-Agent':'PUZUNIVO-Android-Build-QA/1.0'})
+              with urllib.request.urlopen(request,timeout=20) as response:
+                  if response.status!=200 or content_type not in response.headers.get('Content-Type',''):
+                      raise SystemExit('Incompatible server response: '+path)
+                  return response.read(128*1024)
+          try:
+              health=json.loads(get('/api/megarush/health','application/json'))
+              if any((health.get('ok') is not True,health.get('app')!='PUZUNIVO',health.get('gameId')!='megarush',health.get('apiVersion')!=1,health.get('landscape') is not True)):
+                  raise SystemExit('The HTTPS host is not the required PUZUNIVO MegaRush backend version')
+              bootstrap=json.loads(get('/api/megarush/bootstrap','application/json'))
+              if not isinstance(bootstrap.get('chapters'),list) or len(bootstrap['chapters'])!=10:
+                  raise SystemExit('MegaRush bootstrap is unavailable or incompatible')
+              page=get('/megarush','text/html')
+              if b'id="world"' not in page or b'/megarush/game.js' not in page:
+                  raise SystemExit('The playable MegaRush page is missing')
+              get('/megarush/engine.js','javascript')
+              print('Remote PUZUNIVO and MegaRush API/content verified.')
+          except Exception as exc:
+              raise SystemExit('APK blocked: backend not deployed or unreachable: '+str(exc))
+          PYCODE
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Install reproducible Android SDK platforms and build tools
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Compile debug APK
+        working-directory: mobile/android-native
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Verify generated Android APK and record checksum
+        run: |
+          APK='mobile/android-native/app/build/outputs/apk/debug/app-debug.apk'
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep 'package: name='
+          sha256sum "$APK" | tee android-debug.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PUZUNIVO-MegaRush-Android-debug
+          path: |
+            mobile/android-native/app/build/outputs/apk/debug/app-debug.apk
+            android-debug.sha256
+          if-no-files-found: error
