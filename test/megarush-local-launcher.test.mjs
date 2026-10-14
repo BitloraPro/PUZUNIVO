@@ -20,7 +20,7 @@ test('local launcher points to the new port and file, not old Node game', () => 
   const pkg = JSON.parse(read('apper-app/package.json'));
   const vite = read('apper-app/vite.local.config.js');
   assert.match(shell, /npm run megarush:local/);
-  assert.match(shell, /127\.0\.0\.1:5173\/megarush-local\.html/);
+  assert.ok(shell.includes('127.0.0.1:5173/ (auto-opens new MegaRush)'));
   assert.match(pkg.scripts['megarush:local'], /vite --config vite\.local\.config\.js/);
   assert.match(vite, /megarush-local\.html/);
   assert.doesNotMatch(shell, /npm start/);
