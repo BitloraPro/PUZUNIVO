@@ -44,7 +44,7 @@ async function revive(withAd){if(!player)return;if(withAd){try{const earned=awai
 async function refresh(){boot=await api('bootstrap');selected=boot.equipped?.character||selected;account();roster();if(activeTab)fillPanel();}
 async function equip(skin){if(!boot.profile){flash('Start a guest session first');return;}try{await api('wardrobe/equip',{character:selected,skin});await refresh();if(player)player.skin=skin;flash('Equipped!')}catch(e){flash(e.message)}}
 async function buy(itemId){if(!boot.profile){flash('Start as guest or log in to unlock outfits.');return;}try{await api('wardrobe/buy',{itemId});await refresh();fillPanel();flash('New cosmetic unlocked!')}catch(e){flash(e.message)}}
-async function start(){
+async function start(mode='free'){
  // Orientation lock must be requested while the user's Play gesture is active.
  tryLandscape();
  btns.play.disabled=true;btns.play.textContent='Preparing World…';try{
@@ -66,12 +66,21 @@ async function start(){
  if(resumed){world.cameraYaw=savedState.cameraYaw??0;
   if(player.vehicle==='car'&&player.carSlot>=0&&world.traffic[player.carSlot])world.traffic[player.carSlot].occupied=true;
  }
+ // The server, not a client-only police flag, activates the selected Harbor Chase.
+ if(mode==='chase'&&!harborEscaped&&!player.chaseActive){
+  await heartbeat(true);
+  const challenge=await api('mission/chase/start',{sessionId:session});
+  if(challenge.chaseActive){
+   player.chaseActive=true;player.wantedState='chase';player.heat=challenge.heat;
+   player.policeX=player.x-3;player.policeZ=player.z-20;
+  }
+ }
  // Fullscreen/orientation APIs may be refused; the rotate prompt remains as fallback.
  $('panel').classList.add('hidden');$('hud').classList.remove('hidden');$('touch').classList.remove('hidden');$('mission').classList.remove('hidden');
  if(!liveOpsTimer)liveOpsTimer=setInterval(async()=>{if(!running)return;try{const update=await api('bootstrap');const previous=boot.settings.banner;boot.settings=update.settings;boot.announcements=update.announcements;if(previous!==boot.settings.banner)$('notice').textContent=boot.settings.banner}catch{}},25000);
  $('where').textContent=`Ch ${s.mission.chapter} · ${s.mission.chapterTitle}`;$('level').textContent=s.level;
  $('mission-title').textContent=player.chaseActive?'ESCAPE THE CHASE':'FREE ROAM · CITY MISSIONS';$('hearts').textContent=player.hp;
- startAt=performance.now();last=startAt;gameTime=0;physicsCarry=0;frameSamples=0;fpsElapsed=0;running=true;if(!frameId)frameId=requestAnimationFrame(loop);flash(resumed?'Adventure restored. Your collected shards are saved.':'🌴 Free roam! Skate the city. Police respond only to incidents.');
+ startAt=performance.now();last=startAt;gameTime=0;physicsCarry=0;frameSamples=0;fpsElapsed=0;running=true;if(!frameId)frameId=requestAnimationFrame(loop);flash(player.chaseActive?'🚨 HARBOR CHASE — Skate to the waterfront!':resumed?'Adventure restored. Your collected shards are saved.':'🌴 Free roam! Skate the city. Police respond only to incidents.');
  }catch(e){flash(e.message);showPanel();}finally{btns.play.disabled=false;btns.play.textContent='▶ Start Adventure'}}
 function pressAction(action){if(!running||!player)return;
  if(action==='ride'){
@@ -282,7 +291,21 @@ document.querySelectorAll('[data-key]').forEach(b=>{const key=b.dataset.key;
 $('landscape-btn').onclick=tryLandscape;
 function menu(){if(running){running=false;clearTimeout(jumpTimer);clearTimeout(climbTimer);keys.clear();analog.x=0;analog.z=0;resetStick();showPanel();}else if(session){running=true;$('panel').classList.add('hidden');$('hud').classList.remove('hidden');$('touch').classList.remove('hidden');$('mission').classList.remove('hidden');
  last=performance.now();physicsCarry=0;if(!frameId)frameId=requestAnimationFrame(loop);}else showPanel();}
-btns.menu.onclick=menu;btns.play.onclick=()=>{if(session){running=true;$('panel').classList.add('hidden');$('hud').classList.remove('hidden');$('touch').classList.remove('hidden');$('mission').classList.remove('hidden');
+btns.menu.onclick=menu;
+const chaseButton=$('play-chase');
+if(chaseButton)chaseButton.onclick=()=>{
+ if(session&&player){
+  heartbeat(true).then(()=>api('mission/chase/start',{sessionId:session})).then(result=>{
+   if(result.chaseActive){
+    player.chaseActive=true;player.heat=result.heat;player.wantedState='chase';
+    player.policeX=player.x-3;player.policeZ=player.z-20;
+   }
+   if(result.harborReached)harborEscaped=true;
+   menu();flash(result.harborReached?'🏁 Harbor already secured':'🚨 Harbor Chase activated — reach the waterfront!');
+  }).catch(e=>flash(e.message));
+ }else start('chase');
+};
+btns.play.onclick=()=>{if(session){running=true;$('panel').classList.add('hidden');$('hud').classList.remove('hidden');$('touch').classList.remove('hidden');$('mission').classList.remove('hidden');
  last=performance.now();physicsCarry=0;if(!frameId)frameId=requestAnimationFrame(loop);}else start()};
 btns.finish.onclick=complete;
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;fillPanel()});
