@@ -20,3 +20,9 @@ jobs:
         run: npm test
       - name: Run Apper frontend included engine tests
         run: node --test apper-app/tests/*.test.mjs
+      - name: Install Apper 3D frontend dependencies
+        working-directory: apper-app
+        run: npm install --no-audit --no-fund
+      - name: Build local MegaRush entrypoint
+        working-directory: apper-app
+        run: npm run megarush:build
