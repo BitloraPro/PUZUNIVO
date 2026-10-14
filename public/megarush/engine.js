@@ -246,6 +246,21 @@ export function buildCharacterMesh(mesh,player,t){
  // Little backpack depth makes the in-game third-person silhouette readable.
  box(0,shoulder-.38,-.39,.53,.62,.2,'#111a2d');
  box(0,shoulder-.22,-.50,.28,.17,.04,'#59dfc4');
+ // Rear-facing original streetwear markings are real raised 3D geometry.
+ // The chase camera views negative local Z, so the color accents remain readable.
+ box(0,shoulder-.66,-.552,.57,.065,.025,'#38e8bb');
+ box(-.18,shoulder-.51,-.554,.28,.10,.023,'#a7f661');
+ box(.18,shoulder-.34,-.554,.24,.09,.024,'#ed7ac5');
+ box(0,shoulder-.17,-.548,.65,.055,.024,'#71bdf1');
+ for(const side of [-1,1]){
+  box(side*.46,shoulder-.53,-.28,.085,.26,.075,'#4b7596');
+  box(side*.28,shoulder-.82,-.42,.23,.08,.085,'#192a41');
+ }
+ // A slim reflective board rail and footwear accent reinforce rider silhouette.
+ if(skate){
+  box(-.36,.16,-.46,.06,.038,.52,'#9aebff');
+  box(.36,.16,-.46,.06,.038,.52,'#9aebff');
+ }
  // Back-of-jacket patches, straps and diagonal accent: visible in chase camera.
  for(const side of [-1,1]){
   box(side*.25,shoulder-.35,-.50,.10,.65,.055,'#405977');
