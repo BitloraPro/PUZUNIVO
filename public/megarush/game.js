@@ -108,7 +108,7 @@ async function start(mode='chase'){
    player.harborChallenge=true;
    player.chaseActive=true;player.wantedState='chase';player.heat=challenge.heat;
    player.policeX=player.x-3;player.policeZ=player.z-20;
-   world.cameraPitch=Math.min(world.cameraPitch,.02); // Sunset boulevard chase framing
+   world.cameraPitch=-.17; // Lower horizon reveals more sky and coastal skyline in third person
   }
  }
  // Fullscreen/orientation APIs may be refused; the rotate prompt remains as fallback.
