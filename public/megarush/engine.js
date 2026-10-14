@@ -537,6 +537,47 @@ export class WebGLWorld{
   }
   if(i%4===0)b.box(x,h,z,.18,7,.18,'#e6a6d9');
  }
+ // Cinematic waterfront pass: deterministic geometry outside playable collision lanes.
+ // Distant towers, silhouette terraces and warm port lights are all WebGL triangles.
+ for(let i=0;i<32;i++){
+  const x=-148+i*9.35;
+  if(Math.abs(x)<16)continue;
+  const z=147+(i%5)*3.1;
+  const h=25+(Math.imul(i+7,23)%53);
+  const w=4.2+(i%4)*1.3;
+  b.box(x,-.4,z,w,h,6.5,i%5<2?'#293b63':'#395879');
+  b.box(x,h-.4,z,w+.65,.22,7.0,'#79c4dd');
+  for(let yy=5;yy<h-3;yy+=6.6){
+   const light=(i+Math.floor(yy))%5===0?'#293a5d':'#f1ca91';
+   b.box(x-w*.21,yy,z-3.31,.52,1.5,.065,light);
+   b.box(x+w*.21,yy,z-3.31,.52,1.5,.065,'#85c4d6');
+  }
+  if(i%6===0){
+   b.box(x,h,z,.22,7,.22,'#ed8fc1');
+   b.box(x,h+7,z,.52,.7,.52,'#fff0b5');
+  }
+ }
+ // Warm boardwalk festoons, jetty lamps and a layered bluewater horizon.
+ for(let i=0;i<17;i++){
+  const x=-118+i*14.75;
+  b.box(x,0,75,.16,5.4,.16,'#667d93');
+  b.sphere(x,5.5,75,.22,.22,.22,i%3===0?'#ff9bac':'#ffe1a1',5,8);
+  if(i<16)b.beam([x,5.45,75],[x+14.75,5.45,75],.046,'#ffd9a4');
+ }
+ for(let i=0;i<34;i++){
+  const z=85+i*1.45;
+  const near=5+i*.32;
+  b.box(-80, -.115,z,2.9,.008,.055,i%3===0?'#ebb78a':'#509dbc');
+  b.box(80, -.115,z,2.9,.008,.055,i%3===0?'#ffce97':'#61aaca');
+  if(i%4===0)b.box(-near,-.105,z,1.1,.009,.045,'#f7bb89');
+ }
+ // Tall geometric roof signs are grounded on actual downtown buildings.
+ for(const [x,z,h,accent] of [[-77,-41,29,'#f477bc'],[76,-49,34,'#75ecf3'],[-77,8,37,'#ffbf77'],[77,11,31,'#75ecf3']]){
+  b.box(x,h,z,5.1,2.1,.31,'#203451');
+  b.box(x,h+1.0,z,5.35,.20,.34,accent);
+  b.box(x,h+.20,z,4.25,.15,.36,accent);
+  b.box(x,h-.78,z,3.3,.13,.37,'#94c8e0');
+ }
  // Actual deck, mast and triangular sails over navigable water, not screenshots.
  for(const [bx,bz,scale] of [[-39,92,1],[43,105,.7],[91,91,1.05],[-97,109,.73]]){
   const deck=-.09,h=8*scale;
