@@ -524,6 +524,43 @@ export class WebGLWorld{
  for(const [xx,zz,height,color] of [[-43,22,17,'#fb68bb'],[45,-44,20,'#4be9eb'],[-74,-58,13,'#f1ce77']]){
   b.box(xx,height,zz,5,.27,.6,color);b.box(xx,height-1,zz,4.3,1.2,.35,color);
  }
+ // Harbor approach visual pass: separate, non-colliding architectural meshes.
+ // Deterministic lighting strips, multilayer towers, skybridge silhouettes, and
+ // animated-shader-ready light geometry. Never add invisible physics obstacles.
+ for(const side of [-1,1]){
+  for(let i=0;i<7;i++){
+   const x=side*(108+i*5.3),z=86+i*4.2,h=21+(i*11%31);
+   b.box(x,-.24,z,3.4,h,3.8,i%2?'#284367':'#365579');
+   b.box(x,h-.25,z,3.85,.16,4.1,'#8cd4df');
+   for(let y=4;y<h-2;y+=4.2){
+    b.box(x,y,z-1.96,2.7,.095,.07,i%3===0?'#ffd2a3':'#79c4e8');
+   }
+   if(i%3===0)b.box(x,h,z,.19,3.5,.19,'#f5afce');
+  }
+  // Pier-side vertical lights reinforce perspective toward Harbor.
+  for(let z=76;z<=120;z+=8){
+   const x=side*(14+(z-76)*.08);
+   b.box(x,0,z,.18,3.7,.18,'#506b8d');
+   b.box(x,3.7,z,.46,.30,.46,'#ffe4a4');
+   b.box(x,0.03,z,.65,.045,.65,'#4f9ca4');
+  }
+ }
+ // Layered lit promenade outside the checkpoint corridor.
+ for(let i=0;i<23;i++){
+  const x=-110+i*10;
+  if(Math.abs(x)<13)continue;
+  const z=70+(i%3)*2.4;
+  b.box(x,.035,z,4.3,.025,.13,i%2?'#f1b77b':'#58b6d3');
+  b.box(x,.035,z+1.65,4.3,.022,.10,'#a8d8ed');
+ }
+ // Stylized floating sunset cloudbanks; distant flat-topped meshes stay behind
+ // the towers. Unlike a pasted image they participate in the world projection.
+ for(let i=0;i<24;i++){
+  const x=-165+i*14.2,y=57+(i*7%19),z=153+(i%4)*5.6;
+  const w=8+(i%3)*5;
+  b.box(x,y,z,w,.26,3.1,i%4===0?'#dda0a7':i%3===0?'#e5b2ab':'#b6a3bb');
+  if(i%3===0)b.box(x+2.2,y+.45,z+1,w*.52,.20,2.6,'#e9bbad');
+ }
  // Far-shore skyline: varied tower silhouettes and tiny illuminated window grids.
  // Geometry lives beyond the playable harbor so collision rules stay untouched.
  for(let i=0;i<15;i++){
