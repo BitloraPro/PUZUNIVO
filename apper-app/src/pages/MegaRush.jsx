@@ -177,7 +177,7 @@ export default function MegaRush() {
         if (!document.fullscreenElement) {
           await document.documentElement.requestFullscreen?.().catch(() => {});
         }
-        await screen.orientation?.lock?.('landscape').catch(() => {});
+        // Portrait and landscape both remain playable; no forced orientation lock.
       }
     } catch {
       // User agents can decline fullscreen and orientation locks.
@@ -580,16 +580,11 @@ export default function MegaRush() {
                     }}>MAIN MENU</button>
                   )}
                 </div>
-                <p className="mr-key-help">WASD move · Mouse/drag look · Space jump · Shift sprint · B board · E car · K trick</p>
+                <p className="mr-key-help">Touch: joystick to move, drag the scene to look, tap action buttons. Portrait works too; rotate for a wider view. Keyboard: WASD, Space, Shift, B, E and K.</p>
                 <p className="mr-no-fake">Playable 3D WebGL2 build. Real cash rewards, verified cloud XP and AdMob are not enabled here.</p>
               </div>
             </div>
           )}
-          <div className="mr-rotate" role="status">
-            <div>↻</div>
-            <strong>ROTATE TO LANDSCAPE</strong>
-            <p>Turn your phone sideways for the full 3D city and all touch controls.</p>
-          </div>
         </>
       )}
     </div>

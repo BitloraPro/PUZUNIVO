@@ -43,3 +43,18 @@ test('opening localhost root redirects to MegaRush 3D instead of Apper SDK spinn
   assert.ok(vite.includes("Location: '/megarush-local.html'"));
   assert.match(vite, /Cache-Control/);
 });
+
+test('portrait gameplay is reachable and touch buttons remain visible without rotation', () => {
+  const page = read('apper-app/src/pages/MegaRush.jsx');
+  const css = read('apper-app/src/pages/MegaRush.css');
+  assert.doesNotMatch(page, /className="mr-rotate"/);
+  assert.doesNotMatch(page, /screen\.orientation\?\.lock/);
+  assert.match(page, /START HARBOR CHASE/);
+  assert.match(page, /FREE ROAM/);
+  assert.match(page, /mr-action-grid/);
+  assert.match(page, /mr-stick/);
+  assert.ok(css.includes('@media (orientation: portrait)'));
+  assert.ok(css.includes('.mr-menu-shade {'));
+  assert.ok(css.includes('.mr-movement {'));
+  assert.doesNotMatch(css, /\.mr-rotate/);
+});
