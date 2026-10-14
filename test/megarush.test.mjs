@@ -686,7 +686,7 @@ test('Cinematic harbor skyline remains generated geometry and chase UI remains s
  assert.match(engine,/Warm boardwalk festoons/);
  assert.match(engine,/Tall geometric roof signs/);
  assert.match(game,/mission\/chase\/start/);
- assert.match(game,/world\.cameraPitch=Math\.min\(world\.cameraPitch,\.02\)/);
+ assert.match(game,/world\.cameraPitch=-\.17/,'reference camera now aims toward the coastal skyline');
  assert.match(game,/dataset\.pursuit=player\.chaseActive/);
  assert.doesNotMatch(engine,/https?:\/\/[^\s]+\.glb/);
 });
