@@ -53,6 +53,12 @@ namespace MegaRush.Player
             if (!driving) { velocity = Vector3.zero; horizontal = Vector3.zero; }
         }
 
+        public void AttachSkateboard(GameObject visual)
+        {
+            skateboardVisual = visual;
+            if (skateboardVisual != null) skateboardVisual.SetActive(!Driving && onBoard);
+        }
+
         public void ToggleBoard()
         {
             if (Driving) return;
@@ -87,6 +93,7 @@ namespace MegaRush.Player
         {
             damageCooldown = Mathf.Max(0f, damageCooldown - Time.deltaTime);
             if (Driving || controls == null || !controller.enabled) return;
+            if (controls.BoardPressed) ToggleBoard();
 
             Vector2 stick = controls.Movement;
             Vector3 forward = cameraSource != null ? cameraSource.forward : Vector3.forward;

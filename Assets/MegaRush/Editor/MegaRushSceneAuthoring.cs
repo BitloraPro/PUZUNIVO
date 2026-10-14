@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering;
 using MegaRush.Content;
 using MegaRush.Core;
 using MegaRush.Player;
@@ -63,6 +64,8 @@ namespace MegaRush.Editor
             }
             Directory.CreateDirectory(SceneFolder);
             AssetDatabase.Refresh();
+            GraphicsSettings.defaultRenderPipeline = manifest.approvedUrpPipeline;
+            QualitySettings.renderPipeline = manifest.approvedUrpPipeline;
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             Instantiate(manifest.cityEnvironmentPrefab, "Coastal City — authored environment", Vector3.zero);
@@ -73,6 +76,7 @@ namespace MegaRush.Editor
 
             var skateboard = Instantiate(manifest.skateboardPrefab, "Skateboard", playerObject.transform.position);
             skateboard.transform.SetParent(playerObject.transform, true);
+            motor.AttachSkateboard(skateboard);
 
             var carObject = Instantiate(manifest.policeCarPrefab, "Police Pursuer", new Vector3(2, 0, -90));
             var police = carObject.GetComponent<PolicePursuit>() ?? carObject.AddComponent<PolicePursuit>();

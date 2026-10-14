@@ -13,13 +13,14 @@ namespace MegaRush.Core
 
     public sealed class GameSession : MonoBehaviour
     {
-        private CrossPlatformInput controls;
-        private PlayerMotor rider;
-        private ThirdPersonCamera cameraRig;
-        private PolicePursuit pursuer;
-        private HarborFinish harbor;
-        private HudPresenter hud;
-        private DriveableVehicle trafficCar;
+        [SerializeField] private CrossPlatformInput controls;
+        [SerializeField] private PlayerMotor rider;
+        [SerializeField] private ThirdPersonCamera cameraRig;
+        [SerializeField] private PolicePursuit pursuer;
+        [SerializeField] private HarborFinish harbor;
+        [SerializeField] private HudPresenter hud;
+        [SerializeField] private DriveableVehicle trafficCar;
+        private bool initialized;
         private VehicleInteraction vehicleInteraction;
         private Vector3 spawnPoint;
         private GameMode pausedFrom;
@@ -39,7 +40,23 @@ namespace MegaRush.Core
             harbor = finish;
             hud = ui;
             trafficCar = car;
+            // Editor invokes Configure only to serialize references into .unity.
+            if (Application.isPlaying) Initialize();
+        }
 
+        private void Start() => Initialize();
+
+        private void Initialize()
+        {
+            if (initialized) return;
+            if (controls == null || rider == null || cameraRig == null ||
+                pursuer == null || harbor == null || hud == null)
+            {
+                Debug.LogError("MegaRush scene cannot start: approved scene bindings are incomplete.");
+                enabled = false;
+                return;
+            }
+            initialized = true;
             spawnPoint = rider.transform.position;
             rider.Configure(controls, cameraRig.transform);
             rider.KnockedOut += OnPlayerKnockedOut;
@@ -62,8 +79,9 @@ namespace MegaRush.Core
 
         private void ResetGame(bool chase)
         {
-            if (rider == null || pursuer == null) return;
+            if (!initialized || rider == null || pursuer == null) return;
             // Any occupied vehicle is released as part of the session reset.
+            vehicleInteraction?.ForceExit();
             if (trafficCar != null) trafficCar.AssignDriver(null);
             rider.SetDriving(false);
             rider.ResetRider(spawnPoint);

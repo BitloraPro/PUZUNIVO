@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace MegaRush.Content
 {
@@ -14,6 +15,8 @@ namespace MegaRush.Content
         public GameObject drivableTrafficCarPrefab;
         public GameObject harborFinishPrefab;
         public GameObject gameplayHudPrefab;
+        [Header("Imported URP rendering pipeline asset")]
+        public RenderPipelineAsset approvedUrpPipeline;
 
         public bool IsReady(out string reason)
         {
@@ -25,6 +28,10 @@ namespace MegaRush.Content
             if (!drivableTrafficCarPrefab) return Missing("Drivable traffic car", out reason);
             if (!harborFinishPrefab) return Missing("Harbor checkpoint", out reason);
             if (!gameplayHudPrefab) return Missing("HUD", out reason);
+            if (!approvedUrpPipeline) return Missing("URP pipeline asset", out reason);
+            if (!riggedRiderPrefab.GetComponentInChildren<Animator>(true) ||
+                !riggedRiderPrefab.GetComponentInChildren<SkinnedMeshRenderer>(true))
+                return Missing("skinned/animated hero model", out reason);
             reason = string.Empty;
             return true;
         }

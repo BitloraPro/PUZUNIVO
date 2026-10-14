@@ -37,3 +37,10 @@ for file in scripts:
     assert "GameObject.CreatePrimitive" not in source, "Placeholder shapes prohibited"
     assert "http://localhost:3000" not in source, "Legacy backend accidentally referenced"
 print("MegaRush Unity source structure OK; 3D assets, compilation, PS5 and builds not verified.")
+
+# Scene bindings must persist after Unity Editor SaveScene.
+session = (root / "Assets/MegaRush/Scripts/Core/GameSession.cs").read_text()
+assert "[SerializeField] private PlayerMotor rider" in session
+assert "private void Start() => Initialize()" in session
+assets = (root / "Assets/MegaRush/Scripts/Content/MegaRushAssetManifest.cs").read_text()
+assert "SkinnedMeshRenderer" in assets and "approvedUrpPipeline" in assets

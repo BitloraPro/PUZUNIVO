@@ -9,13 +9,14 @@ namespace MegaRush.Input
         public Vector2 Move { get; private set; }
         public bool SprintHeld { get; private set; }
 
-        private bool jump, trick, interact, pause;
+        private bool jump, trick, board, interact, pause;
         private Vector2 lookDelta;
 
         public void SetMove(Vector2 normalized) => Move = Vector2.ClampMagnitude(normalized, 1f);
         public void SetSprint(bool value) => SprintHeld = value;
         public void TapJump() => jump = true;
         public void TapTrick() => trick = true;
+        public void TapBoard() => board = true;
         public void TapInteract() => interact = true;
         public void TapPause() => pause = true;
         public void AddLookDelta(Vector2 delta) => lookDelta += delta;
@@ -36,6 +37,7 @@ namespace MegaRush.Input
 
         public bool ConsumeJump() => Consume(ref jump);
         public bool ConsumeTrick() => Consume(ref trick);
+        public bool ConsumeBoard() => Consume(ref board);
         public bool ConsumeInteract() => Consume(ref interact);
         public bool ConsumePause() => Consume(ref pause);
 
@@ -43,7 +45,7 @@ namespace MegaRush.Input
         {
             Move = Vector2.zero;
             lookDelta = Vector2.zero;
-            SprintHeld = jump = trick = interact = pause = false;
+            SprintHeld = jump = trick = board = interact = pause = false;
         }
     }
 

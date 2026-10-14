@@ -12,6 +12,7 @@ namespace MegaRush.Input
         public bool Sprint { get; private set; }
         public bool JumpPressed { get; private set; }
         public bool TrickPressed { get; private set; }
+        public bool BoardPressed { get; private set; }
         public bool InteractPressed { get; private set; }
         public bool PausePressed { get; private set; }
 
@@ -28,6 +29,7 @@ namespace MegaRush.Input
             Vector2 look = Vector2.zero;
             bool jump = false;
             bool trick = false;
+            bool board = false;
             bool interact = false;
             bool pause = false;
             bool sprint = false;
@@ -41,6 +43,7 @@ namespace MegaRush.Input
                           - (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed ? 1f : 0f);
                 jump |= keyboard.spaceKey.wasPressedThisFrame;
                 trick |= keyboard.kKey.wasPressedThisFrame;
+                board |= keyboard.bKey.wasPressedThisFrame;
                 interact |= keyboard.eKey.wasPressedThisFrame;
                 pause |= keyboard.escapeKey.wasPressedThisFrame;
                 sprint |= keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed;
@@ -54,6 +57,7 @@ namespace MegaRush.Input
                 look += pad.rightStick.ReadValue() * 105f * Time.unscaledDeltaTime;
                 jump |= pad.buttonSouth.wasPressedThisFrame;
                 trick |= pad.buttonWest.wasPressedThisFrame;
+                board |= pad.rightShoulder.wasPressedThisFrame;
                 interact |= pad.buttonEast.wasPressedThisFrame;
                 pause |= pad.startButton.wasPressedThisFrame;
                 sprint |= pad.leftShoulder.isPressed;
@@ -70,6 +74,7 @@ namespace MegaRush.Input
                 look += mobile.ConsumeLookDelta();
                 jump |= mobile.ConsumeJump();
                 trick |= mobile.ConsumeTrick();
+                board |= mobile.ConsumeBoard();
                 interact |= mobile.ConsumeInteract();
                 pause |= mobile.ConsumePause();
                 sprint |= mobile.SprintHeld;
@@ -80,6 +85,7 @@ namespace MegaRush.Input
             Sprint = sprint;
             JumpPressed = jump;
             TrickPressed = trick;
+            BoardPressed = board;
             InteractPressed = interact;
             PausePressed = pause;
         }

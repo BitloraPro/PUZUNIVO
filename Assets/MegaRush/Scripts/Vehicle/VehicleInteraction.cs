@@ -22,6 +22,15 @@ namespace MegaRush.Vehicle
             cameraRig = camera;
         }
 
+        public void ForceExit()
+        {
+            if (driving == null) return;
+            driving.AssignDriver(null);
+            player.SetDriving(false);
+            cameraRig?.Follow(player.transform, controls);
+            driving = null;
+        }
+
         private void Update()
         {
             if (player == null || controls == null || !controls.InteractPressed) return;
