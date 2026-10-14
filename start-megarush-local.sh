@@ -24,7 +24,7 @@ fi
 echo
 echo "========================================================"
 echo " NEW APPER MEGARUSH 3D — LOCAL PRACTICE (NOT OLD GAME)"
-echo " Open in Chrome: http://127.0.0.1:5173/megarush-local.html"
+echo " Open in Chrome: http://127.0.0.1:5173/ (auto-opens new MegaRush)"
 echo " Keep this Termux window open while playing."
 echo " No Apper SDK, login or .env required for this practice run."
 echo "========================================================"

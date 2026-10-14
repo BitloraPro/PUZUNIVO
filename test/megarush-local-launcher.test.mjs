@@ -34,3 +34,12 @@ test('the locally launched 3D game is the same Apper gameplay route', () => {
   assert.match(page, /ESCAPE THE CHASE/);
   assert.match(engine, /export class WebGLWorld/);
 });
+
+test('opening localhost root redirects to MegaRush 3D instead of Apper SDK spinner', () => {
+  const vite = read('apper-app/vite.local.config.js');
+  assert.match(vite, /local-megarush-home/);
+  assert.match(vite, /configureServer/);
+  assert.match(vite, /\/index\\.html/);
+  assert.match(vite, /Location: '\/megarush-local\\.html'/);
+  assert.match(vite, /Cache-Control/);
+});

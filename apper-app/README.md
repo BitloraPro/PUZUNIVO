@@ -20,7 +20,7 @@ npm install --no-audit --no-fund
 npm run megarush:local
 ```
 
-Open **http://127.0.0.1:5173/megarush-local.html**. On a phone rotate to **landscape**. Keep the terminal running. If an earlier Node server is still running on `localhost:3000`, don't open that address: it serves the **old** game, not this entrypoint. This is a standalone practice game: no Apper login, remote mission verification, backend balances or reward grants are available.
+Open **http://127.0.0.1:5173/** — automatically redirects to **/megarush-local.html**, avoiding the old Apper SDK loading screen. On a phone rotate to **landscape**. Keep the terminal running. If an earlier Node server is still running on `localhost:3000`, don't open that address: it serves the **old** game, not this entrypoint. This is a standalone practice game: no Apper login, remote mission verification, backend balances or reward grants are available.
 
 To independently build the standalone game: `npm run megarush:build` (output `dist-local/`). The authenticated Apper app requires the platform-provided environment and SDK, not this special local entrypoint.
 
