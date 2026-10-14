@@ -309,3 +309,35 @@ body:has(#hud:not(.hidden)) .touch {
     display: none;
   }
 }
+
+/* Reference reset — cinematic HUD with real session data and responsive controls. */
+body:has(#hud:not(.hidden)) .top {left:auto;right:max(6px,env(safe-area-inset-right));top:5px;padding:3px;background:#111b2b9e;border:1px solid #ffffff3d;border-radius:9px;min-height:0}
+body:has(#hud:not(.hidden)) .top .brand,body:has(#hud:not(.hidden)) .top #notice,body:has(#hud:not(.hidden)) .top #admin-link {display:none!important}
+body:has(#hud:not(.hidden)) #menu-btn {font-size:0;min-width:40px;min-height:34px;padding:3px;background:#121f31c7;border-radius:7px}
+body:has(#hud:not(.hidden)) #menu-btn::after {content:'Ⅱ';font-size:23px}
+body:has(#hud:not(.hidden)) .hud-cluster {position:fixed;right:10px;top:59px;left:auto;margin:0;max-width:none;opacity:.8}
+body:has(#hud:not(.hidden)) .hud-cluster .hud-chip:not(.chase-indicator) {display:none}
+body:has(#hud:not(.hidden)) .minimap {position:fixed;left:max(14px,env(safe-area-inset-left));top:10px;width:clamp(93px,12.5vw,190px);height:clamp(93px,12.5vw,190px);border:2px solid #d8f4ffc9;box-shadow:0 0 0 4px #051729a3,0 9px 30px #000b}
+.chase-objective,.chase-stats {display:none}
+body:has(#hud:not(.hidden)) .chase-objective {display:flex;align-items:center;gap:9px;position:fixed;left:40%;transform:translateX(-50%);top:10px;padding:6px 13px;border-left:3px solid #ffd43c;background:linear-gradient(90deg,#112039e8,#12233db5);border-radius:6px;min-width:180px;box-shadow:0 5px 20px #0006}
+.chase-objective strong {display:block;font-size:clamp(12px,1.35vw,20px);font-weight:900;white-space:nowrap}
+.chase-objective small {display:block;color:#d4e8f7;font-size:clamp(9px,.9vw,12px);white-space:nowrap}
+.chase-objective small b {color:#ffce45;margin-left:8px}
+.chase-objective .mission-diamond {font-size:26px;color:#ffce45}
+body:has(#hud:not(.hidden)) .chase-stats {position:fixed;display:flex;top:10px;right:70px;gap:6px;align-items:flex-start}
+.chase-stats>span {background:#102035d9;border:1px solid #ffffff38;border-radius:7px;white-space:nowrap;padding:6px 8px;font-weight:900;font-size:clamp(10px,1vw,16px)}
+.chase-stats small {display:block;font-size:9px;color:#89dbfb}
+.chase-stats .health-stat {color:#fa5263;text-shadow:0 2px #692033;font-size:clamp(14px,1.6vw,22px);letter-spacing:2px}
+body:has(#hud:not(.hidden)) .objective,body:has(#hud:not(.hidden)) .waypoint,body:has(#hud:not(.hidden)) .speedometer {display:none}
+body:has(#hud:not(.hidden)) .mission {left:50%;bottom:6px;width:clamp(155px,19vw,210px);padding:5px 8px;background:#091628d5;border-color:#ffd55980}
+body:has(#hud:not(.hidden)) .mission-label {display:none}
+body:has(#hud:not(.hidden)) .mission h2 {font-size:11px}
+body:has(#hud:not(.hidden)) .touch .actionpad .sprint {border:2px solid #59ffca;background:#07533fdd}
+@media(orientation:landscape) and (max-height:530px) {
+ body:has(#hud:not(.hidden)) .chase-objective {top:4px;left:40%;padding:3px 6px;gap:4px}
+ .chase-objective strong {font-size:11px}.chase-objective small {font-size:9px}.chase-objective .mission-diamond {font-size:17px}
+ body:has(#hud:not(.hidden)) .chase-stats {top:4px;right:51px;gap:3px}
+ .chase-stats>span {padding:3px 5px;font-size:10px}.chase-stats .health-stat {font-size:13px;letter-spacing:0}
+ body:has(#hud:not(.hidden)) .minimap {top:6px;left:9px;width:clamp(80px,18vh,124px);height:clamp(80px,18vh,124px)}
+ body:has(#hud:not(.hidden)) .hud-cluster {top:45px}
+}
