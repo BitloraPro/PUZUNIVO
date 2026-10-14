@@ -206,6 +206,23 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
        return json(res,200,{ok:true,awarded:inserted===1,level:next,funCoins:one('SELECT coins FROM users WHERE id=?',user.id).coins});
      }catch(e){db.exec('ROLLBACK');throw e}
    }
+   // A real crash checkpoint must be committed before the client teleports;
+   // otherwise the next anti-teleport heartbeat rejects legitimate recovery.
+   // The server never awards coins or progression for a respawn.
+   if(route==='/api/megarush/session/respawn'&&method==='POST'){
+     checkPlayer(user);throttle('mr-respawn-'+user.id,10);
+     const b=await requireBody(req),s=currentSession(user,b.sessionId),p=progress(user);
+     if(s.level!==p.level)throw fail(409,'Level has changed');
+     const chase=s.chase_active===1&&!s.harbor_reached;
+     const heat=chase?0.92:0;
+     const wanted=chase?'chase':'patrol';
+     run("UPDATE mr_sessions SET x=0,z=0,vehicle='skate',car_slot=-1,hp=3,heat=?,police_x=-3,police_z=-20,facing=0,view_yaw=0,wanted_state=?,last_seen=? WHERE id=? AND user_id=? AND ended_at IS NULL",
+       heat,wanted,now(),s.id,user.id);
+     return json(res,200,{ok:true,x:0,z:0,state:{
+       hp:3,vehicle:'skate',carSlot:-1,heat,policeX:-3,policeZ:-20,
+       chaseActive:chase,wantedState:wanted,cameraYaw:0,angle:0
+     }});
+   }
    if(route==='/api/megarush/session/end'&&method==='POST'){
      checkPlayer(user);const b=await requireBody(req);
      run('UPDATE mr_sessions SET ended_at=? WHERE id=? AND user_id=? AND ended_at IS NULL',now(),compact(b.id,90),user.id);
