@@ -2,6 +2,28 @@
 
 This folder is a source snapshot of the **existing PUZUNIVO Apper project** (`puzunivo-competent`), copied into the parent `BitloraPro/PUZUNIVO` repository on 2026-10-14. It does not replace the repository root's independent Node.js/SQLite game.
 
+## Start the latest MegaRush 3D locally without Apper SDK (Termux / desktop)
+
+For the **standalone 3D practice game**, use the dedicated entrypoint. It imports the same `src/pages/MegaRush.jsx` and `src/lib/megarushEngine.js` as the Apper copy, but skips the Apper SDK and database:
+
+```sh
+# From the GitHub repository root (recommended):
+cd ~/PUZUNIVO
+git pull --ff-only
+bash start-megarush-local.sh
+```
+
+Or, while already in `apper-app`:
+
+```sh
+npm install --no-audit --no-fund
+npm run megarush:local
+```
+
+Open **http://127.0.0.1:5173/megarush-local.html**. On a phone rotate to **landscape**. Keep the terminal running. If an earlier Node server is still running on `localhost:3000`, don't open that address: it serves the **old** game, not this entrypoint. This is a standalone practice game: no Apper login, remote mission verification, backend balances or reward grants are available.
+
+To independently build the standalone game: `npm run megarush:build` (output `dist-local/`). The authenticated Apper app requires the platform-provided environment and SDK, not this special local entrypoint.
+
 ## Run the frontend locally
 
 1. Install Node.js and run `npm install` **inside this folder**.

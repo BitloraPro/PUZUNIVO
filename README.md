@@ -120,3 +120,15 @@ The independently runnable package now includes a fifth **WebGL2 open-world game
 ## Apper frontend (MegaRush 3D)
 
 The connected Apper React app is preserved separately in [`apper-app/`](./apper-app/README.md), including the `/megarush` 3D gameplay route, WebGL2 engine and source specification. The repository root remains the independent Node.js/SQLite version. This is a source sync, not a shared runtime or automatic database migration.
+
+## Start the **new Apper MegaRush locally** (different from the old Node game)
+
+`npm start` in this repository's root **still starts the original legacy Node/SQLite game at port 3000**. To see the more recent **Apper MegaRush 3D frontend** in your Android Termux browser instead, run:
+
+```sh
+cd ~/PUZUNIVO
+git pull --ff-only
+bash start-megarush-local.sh
+```
+
+Then open **http://127.0.0.1:5173/megarush-local.html** in Chrome, rotate to landscape and select Harbor Chase. The launcher downloads the frontend's npm dependencies on first run, uses a separate port, and bypasses the Apper auth SDK/database entirely. No environment credentials or Apper credits are required for local **practice**. For the hosted authenticated version use https://preview--puzunivo-competent.apper.so. The local frontend does **not** cloud-save profile balances or missions and remains stylized low-poly. See [Apper-specific instructions](./apper-app/README.md).
