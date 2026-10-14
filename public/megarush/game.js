@@ -61,7 +61,8 @@ async function start(mode='free'){
   angle:savedState.angle??0,hp:savedState.hp??3,vehicle:savedState.vehicle??(resumed?'foot':'skate'),
   heat:savedState.heat??0,crashCooldown:resumed?0:5,
   policeX:savedState.policeX??-12,policeZ:savedState.policeZ??20,moving:false,trickTimer:0,
-  chaseActive:savedState.chaseActive??false,wantedState:savedState.wantedState??'patrol',carSlot:savedState.carSlot??-1};
+  chaseActive:savedState.chaseActive??false,wantedState:savedState.wantedState??'patrol',carSlot:savedState.carSlot??-1,
+  harborChallenge:s.incidentType==='harbor_challenge'};
  if(!world)world=new WebGLWorld($('world'));world.generate(boot.level);if(!resumed)world.cameraYaw=0;
  if(resumed){world.cameraYaw=savedState.cameraYaw??0;
   if(player.vehicle==='car'&&player.carSlot>=0&&world.traffic[player.carSlot])world.traffic[player.carSlot].occupied=true;
@@ -71,6 +72,7 @@ async function start(mode='free'){
   await heartbeat(true);
   const challenge=await api('mission/chase/start',{sessionId:session});
   if(challenge.chaseActive){
+   player.harborChallenge=true;
    player.chaseActive=true;player.wantedState='chase';player.heat=challenge.heat;
    player.policeX=player.x-3;player.policeZ=player.z-20;
   }
@@ -261,7 +263,7 @@ function loop(timestamp){if(!running||!player||!world){frameId=0;return;}frameId
   checkpointPending=true;
   heartbeat(true).then(result=>{
    if(result?.harborReached){
-    harborEscaped=true;player.chaseActive=false;player.heat=0;player.policeX=-12;player.policeZ=20;
+    harborEscaped=true;player.harborChallenge=false;player.chaseActive=false;player.heat=0;player.policeX=-12;player.policeZ=20;
     flash('🏁 HARBOR ESCAPE VERIFIED — Finish your zone!');sound(920,.19);
    }
   }).catch(e=>flash('Checkpoint sync: '+e.message)).finally(()=>{checkpointPending=false});
