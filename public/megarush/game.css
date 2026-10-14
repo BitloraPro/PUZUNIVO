@@ -271,7 +271,7 @@ body:has(#hud:not(.hidden)) .touch {
     gap: 3px;
   }
   body:has(#hud:not(.hidden)) #where,
-  body:has(#hud:not(.hidden)) #orbs,
+  body:has(#hud:not(.hidden)) .hud-chip:has(#orbs),
   body:has(#hud:not(.hidden)) #fps {
     display: none;
   }

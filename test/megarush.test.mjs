@@ -697,3 +697,14 @@ test('Police convoy reinforcements are visual and require an active pursuit',()=
  assert.deepEqual(pursuitSupportPositions({...player,chaseActive:false}),[]);
  assert.deepEqual(pursuitSupportPositions({...player,policeX:NaN}),[]);
 });
+
+
+test('The reference gameplay HUD uses the saved server economy, not mock counters',()=>{
+ const html=readFileSync(new URL('../public/megarush/index.html',import.meta.url),'utf8');
+ const source=readFileSync(new URL('../public/megarush/game.js',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../public/megarush/game.css',import.meta.url),'utf8');
+ for(const selector of ['id="coins"','id="xp"','id="play-chase"','id="waypoint"','id="minimap-canvas"'])assert.ok(html.includes(selector),selector);
+ assert.ok(source.includes("boot.profile?.funCoins??'—'"));
+ assert.ok(source.includes("boot.profile?.xp??'—'"));
+ assert.ok(css.includes('.hud-chip:has(#orbs)'),'small phones should hide the complete optional shard chip');
+});
