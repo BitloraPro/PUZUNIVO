@@ -37,10 +37,43 @@ function fillPanel(){const box=$('panel-content');if(!boot)return;
   box.innerHTML=`<h2>🎮 Controls</h2><div class="cards"><div class="mini-card"><b>Move</b><small>WASD / Arrow keys / Touch pad</small></div><div class="mini-card"><b>Jump / Dive</b><small>Space / V</small></div><div class="mini-card"><b>Skateboard</b><small>B to toggle</small></div><div class="mini-card"><b>Enter / leave car</b><small>E near traffic</small></div><div class="mini-card"><b>Stunts</b><small>K for kickflip</small></div><div class="mini-card"><b>Climb</b><small>R when jumping near rooftops</small></div><div class="mini-card"><b>Pause</b><small>Escape / Menu</small></div><div class="mini-card"><b>Radio</b><small>M to toggle synthesised game tones</small></div></div><p class="muted">Balanced speeds, simplified arcade physics, 3D city/park/forest/coast environments. Ads and paid purchases are intentionally unavailable in web preview.</p>`;
  }else box.innerHTML=`<p class="muted">${esc(boot.settings.banner)}</p>${boot.announcements.map(a=>`<div class="mini-card">📢 ${esc(a.message)}</div>`).join('')}`;
 }
-async function revive(withAd){if(!player)return;if(withAd){try{const earned=await rewardedRevive();if(!earned){flash('Reward not earned. Free respawn is available.');return}}catch(e){flash('Ad unavailable: '+e.message);return}}
- player.hp=3;player.heat=player.chaseActive?.92:0;player.wantedState=player.chaseActive?'chase':'patrol';player.crashCooldown=5;
- if(!withAd){player.x=0;player.y=0;player.z=0;player.policeX=-3;player.policeZ=-20;}
- player.vx=0;player.vy=0;player.vz=0;session&&menu();flash(withAd?'❤️ Revived after earned ad':'❤️ Free checkpoint respawn');}
+async function revive(withAd){
+ if(!player||!session)return;
+ if(withAd){
+  try{
+   if(!await rewardedRevive()){
+    flash('Reward not earned. Free respawn is still available.');
+    return;
+   }
+  }catch(e){flash('Ad unavailable: '+e.message);return;}
+ }
+ const freeButton=$('respawn'),adButton=$('reward-revive');
+ if(freeButton)freeButton.disabled=true;
+ if(adButton)adButton.disabled=true;
+ try{
+  // The most recent crash state may not have reached the server when the render
+  // loop stopped. Save it first, then make the checkpoint authoritative.
+  await heartbeat(true).catch(()=>{});
+  const recovery=await api('session/respawn',{sessionId:session});
+  const saved=recovery.state;
+  Object.assign(player,{
+   x:recovery.x,y:0,z:recovery.z,vx:0,vy:0,vz:0,
+   onGround:true,angle:saved.angle,vehicle:saved.vehicle,
+   hp:saved.hp,heat:saved.heat,policeX:saved.policeX,policeZ:saved.policeZ,
+   chaseActive:saved.chaseActive,wantedState:saved.wantedState,
+   carSlot:saved.carSlot,crashCooldown:5,searchTime:0,trickTimer:0
+  });
+  if(world)world.cameraYaw=saved.cameraYaw;
+  gameTime=0;lastHeartbeat=0;physicsCarry=0;
+  running=false;menu();
+  flash('❤️ Harbor checkpoint restored. Escape to the waterfront!');
+ }catch(e){
+  flash('Respawn failed: '+e.message);
+ }finally{
+  if(freeButton)freeButton.disabled=false;
+  if(adButton)adButton.disabled=false;
+ }
+}
 async function refresh(){boot=await api('bootstrap');selected=boot.equipped?.character||selected;account();roster();if(activeTab)fillPanel();}
 async function equip(skin){if(!boot.profile){flash('Start a guest session first');return;}try{await api('wardrobe/equip',{character:selected,skin});await refresh();if(player)player.skin=skin;flash('Equipped!')}catch(e){flash(e.message)}}
 async function buy(itemId){if(!boot.profile){flash('Start as guest or log in to unlock outfits.');return;}try{await api('wardrobe/buy',{itemId});await refresh();fillPanel();flash('New cosmetic unlocked!')}catch(e){flash(e.message)}}
