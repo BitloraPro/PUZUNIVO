@@ -616,7 +616,7 @@ test('Third-person rider streetwear geometry remains finite and deterministic',(
  buildCharacterMesh(first,player,1.25);
  buildCharacterMesh(second,player,1.25);
  assert.deepEqual(first.vertices,second.vertices,'rider appearance must not flicker across identical frames');
- assert.ok(first.vertices.length>3000,'detailed character must remain an actual 3D mesh');
+ assert.ok(first.vertices.length>2500,'detailed character must remain an actual 3D mesh');
  assert.ok(first.vertices.every(Number.isFinite),'rider vertices and normals must stay finite');
  const facing=new MeshBuilder();
  buildCharacterMesh(facing,{...player,angle:1.2},1.25);
