@@ -65,7 +65,7 @@ async function inspect(label, opts) {
     assert.ok(state.gl && state.width > 100 && state.height > 100, 'WebGL2 surface must render');
     assert.equal(state.mission, 'Escape the chase');
     assert.equal(state.hudVisible, true);
-    assert.match(state.distance || '', /\\d+ m$/);
+    assert.match(state.distance || '', /\d+ m$/);
     assert.ok(state.health?.includes('♥'), 'HUD hearts must be connected to gameplay');
     assert.deepEqual(errors, [], 'Unhandled browser errors are not acceptable');
     console.log(label.toUpperCase() + ': ' + JSON.stringify(state));
