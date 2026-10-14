@@ -117,3 +117,17 @@ body:has(#hud:not(.hidden)) .speedometer strong{font-variant-numeric:tabular-num
  body:has(#hud:not(.hidden)) .mission{width:175px;max-width:28vw}
  body:has(#hud:not(.hidden)) .objective{top:27px}
 }
+
+/* Harbor Chase: a distinct story-mode action while preserving free roam. */
+.panel-actions .chase-cta {
+  grid-column: 1 / -1;
+  min-height: 49px;
+  color: #fff6eb;
+  background: linear-gradient(105deg, #9c2848, #d95142 54%, #de8b32);
+  border-color: #ffb17a;
+  box-shadow: 0 5px 24px #e95e456b;
+}
+.panel-actions .chase-cta:focus-visible {
+  outline: 3px solid #f9d987;
+  outline-offset: 3px;
+}
