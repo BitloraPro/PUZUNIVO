@@ -210,8 +210,8 @@ test('Skater detail and car render remain stable across modes and elevated harbo
  buildCharacterMesh(driving,{...rider,vehicle:'car'},1);
  assert.equal(driving.vertices.length,0,'a seated driver cannot overlap the vehicle body as a standing avatar');
  const source=readFileSync(new URL('../public/megarush/engine.js',import.meta.url),'utf8');
- assert.match(source,/this\\.elevation\\(x0,z0\\)/,'the trail follows actual road height');
- assert.match(source,/occupied\\?\\.color/,'occupied car keeps original paint on entry');
+ assert.match(source,/this\.elevation\(x0,z0\)/,'the trail follows actual road height');
+ assert.match(source,/occupied\?\.color/,'occupied car keeps original paint on entry');
 });
 
 test('Landscape HUD, real analog touch control, and orientation fallback are integrated only into MegaRush',()=>{
