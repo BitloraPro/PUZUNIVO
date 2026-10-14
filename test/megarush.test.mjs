@@ -214,6 +214,15 @@ test('Skater detail and car render remain stable across modes and elevated harbo
  assert.match(source,/occupied\?\.color/,'occupied car keeps original paint on entry');
 });
 
+test('An opt-in Harbor Chase stays active if the pursuing officer loses contact',()=>{
+ const world={weather:'clear',collide:()=>false,elevation:()=>0};
+ const missionPlayer={x:0,y:0,z:0,vx:0,vy:0,vz:0,angle:0,onGround:true,vehicle:'skate',heat:.92,hp:3,crashCooldown:0,
+  policeX:90,policeZ:-70,chaseActive:true,wantedState:'chase',harborChallenge:true};
+ for(let i=0;i<8*60;i++)updatePlayer(missionPlayer,{x:0,z:0},world,1/60);
+ assert.equal(missionPlayer.chaseActive,true,'accepted challenge cannot be cancelled by contact-distance alone');
+ assert.equal(missionPlayer.wantedState,'chase');
+});
+
 test('Landscape HUD, real analog touch control, and orientation fallback are integrated only into MegaRush',()=>{
  const root=new URL('../public/megarush/',import.meta.url);
  const html=readFileSync(new URL('index.html',root),'utf8');
