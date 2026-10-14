@@ -1,0 +1,19 @@
+name: MegaRush fresh Unity source checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify fresh Unity project structure
+        run: python3 scripts/validate_project.py
+      - name: Explicitly report build status
+        run: |
+          echo "Unity Editor, assets and Sony SDK are NOT on this runner."
+          echo "Source validation is not a Unity compilation or PS5/Web/Android build."
