@@ -51,17 +51,26 @@ void main(){
  float road=max(1.0-smoothstep(0.018,0.058,distance(vBase,vec3(0.1451,0.2,0.3059))),
                 1.0-smoothstep(0.018,0.058,distance(vBase,vec3(0.2039,0.2627,0.3490))));
  float streak=pow(1.0-abs(sin(vWorld.x*0.13+vWorld.z*0.44)),18.0);
- col+=upward*road*(0.08+uWet*0.23)*streak*vec3(0.68,0.40,0.76);
+ float longRoad=pow(max(0.0,cos(vWorld.x*0.105+sin(vWorld.z*.04)*.18)),16.0);
+ float glossyBands=pow(max(0.0,sin(vWorld.z*.38+vWorld.x*.025)),9.0);
+ vec3 sunsetRoad=vec3(1.0,.49,.28)*longRoad+vec3(.16,.68,1.0)*glossyBands;
+ col+=upward*road*((0.08+uWet*0.23)*streak*vec3(0.68,0.40,0.76)+
+  (.10+uWet*.38)*sunsetRoad);
+ // Fake ray-tracing is not used; all highlights remain anchored in 3D coordinates.
  // Ocean ripple shimmer near the sun direction, animated using real world space.
  float sea=1.0-smoothstep(0.025,0.075,distance(vBase,vec3(0.0314,0.4118,0.5961)));
  float wave=pow(max(0.0,sin(vWorld.z*2.2+uTime*1.4)*sin(vWorld.x*1.3-uTime*0.73)),7.0);
- col+=upward*sea*wave*vec3(0.23,0.25,0.25);
+ float sunpath=pow(max(0.0,1.0-abs(vWorld.x-68.0)*.012),3.0);
+ float ripple=pow(max(0.0,sin(vWorld.z*3.9+uTime*1.8+sin(vWorld.x*.32))),13.0);
+ col+=upward*sea*(wave*vec3(.23,.25,.25)+sunpath*ripple*vec3(1.0,.66,.30)*.7);
  // Neon signs and streetlights emit color in the shader even after sunset.
  float mx=max(max(vBase.r,vBase.g),vBase.b);
  float mn=min(min(vBase.r,vBase.g),vBase.b);
  float neon=smoothstep(0.39,0.63,mx-mn)*smoothstep(0.55,0.9,mx);
  float lamp=1.0-smoothstep(0.09,0.28,distance(vBase,vec3(0.992,0.949,0.694)));
  col+=vBase*(0.43*neon+0.36*lamp)*(1.0-amt*0.55);
+ // Distance fade and soft dusk boost keep the backdrop readable without bloom passes.
+ col=mix(col,col*vec3(1.035,.97,.95),smoothstep(25.0,145.0,vDepth)*.26);
  // Police sirens color nearby 3D geometry, not a 2D screen overlay.
  float nearPolice=exp(-distance(vWorld.xz,uPolicePos.xz)*0.24)*uPursuit;
  float siren=step(0.5,fract(uTime*6.0));
