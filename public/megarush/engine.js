@@ -286,6 +286,29 @@ export function buildCharacterMesh(mesh,player,t){
 export const HARBOR_FINISH=Object.freeze({x:0,z:112});
 export function onHarborRoad(x,z){return Math.abs(x)<=6.2&&z>=60&&z<=123;}
 export function atHarbor(x,z){return Math.hypot(x-HARBOR_FINISH.x,z-HARBOR_FINISH.z)<9;}
+// Two deterministic visual support cruisers trail the lead police vehicle.
+// They are scene dressing: only the server-backed lead pursuer affects damage.
+export function pursuitSupportPositions(player){
+ if(!player?.chaseActive||![player.x,player.z,player.policeX,player.policeZ].every(Number.isFinite))return [];
+ const dx=player.x-player.policeX,dz=player.z-player.policeZ,dist=Math.hypot(dx,dz)||1;
+ const forwardX=dx/dist,forwardZ=dz/dist;
+ return [-1,1].map(side=>({
+  x:player.policeX-forwardX*7+side*forwardZ*3.2,
+  z:player.policeZ-forwardZ*7-side*forwardX*3.2,
+  angle:Math.atan2(forwardX,forwardZ)
+ }));
+}
+// Bounded, world-space Harbor guidance chevrons on the actual center boulevard.
+// No GPS, fabricated distance or detached HUD-only waypoint marker.
+export function harborRouteMarkers(x,z){
+ if(!Number.isFinite(x)||!Number.isFinite(z)||Math.abs(x)>58)return [];
+ const first=Math.max(-84,Math.ceil((z+8)/14)*14),out=[];
+ for(let roadZ=first;roadZ<=112&&out.length<7;roadZ+=14){
+  if(roadZ<=z+4)continue;
+  out.push({x:0,z:roadZ,y:roadZ>66?1.89:.038});
+ }
+ return out;
+}
 export function trafficPosition(vehicle,t){return -95+((vehicle.position+t*vehicle.speed)%188+188)%188;}
 export function buildVehicleMesh(mesh,{x,y=0,z,angle=0,color='#e99a4b',police=false,flash=false}){
  const ca=Math.cos(angle),sa=Math.sin(angle);
@@ -751,8 +774,24 @@ export class WebGLWorld{
   if(dist<42)buildVehicleMesh(dynamic,{x:v.lane,z,angle:0,color:v.color});
   else if(dist<135){dynamic.box(v.lane,.12,z,2.2,.72,3.65,v.color);dynamic.box(v.lane,.84,z,1.7,.67,1.68,'#6c9db8');}
  }
+ if(player.harborChallenge&&player.chaseActive){
+  // Physically located glowing chevrons point down the driveable Harbor road.
+  for(const arrow of harborRouteMarkers(px,pz)){
+   if(Math.hypot(arrow.x-px,arrow.z-pz)>74)continue;
+   const flicker=Math.floor(t*2)%2?'#ffe9a8':'#ffbf55';
+   dynamic.beam([-1.25,arrow.y,arrow.z-1],[0,arrow.y,arrow.z+1.2],.11,flicker);
+   dynamic.beam([1.25,arrow.y,arrow.z-1],[0,arrow.y,arrow.z+1.2],.11,flicker);
+  }
+ }
  if(player.chaseActive||player.wantedState==='search'){const policeX=player.policeX,policeZ=player.policeZ;
-  buildVehicleMesh(dynamic,{x:policeX,y:this.elevation(policeX,policeZ),z:policeZ,angle:Math.atan2(player.x-policeX,player.z-policeZ),police:true,flash:Math.floor(t*7)%2===0});}
+  buildVehicleMesh(dynamic,{x:policeX,y:this.elevation(policeX,policeZ),z:policeZ,angle:Math.atan2(player.x-policeX,player.z-policeZ),police:true,flash:Math.floor(t*7)%2===0});
+  // In pursuit, two low-cost visual cruisers reinforce the police convoy.
+  // No extra AI, hits, server events or virtual gameplay balances are fabricated.
+  if(player.chaseActive)for(const escort of pursuitSupportPositions(player)){
+   if(Math.hypot(escort.x-px,escort.z-pz)>62||this.collide(escort.x,escort.z,0))continue;
+   buildVehicleMesh(dynamic,{x:escort.x,y:this.elevation(escort.x,escort.z),z:escort.z,angle:escort.angle,police:true,flash:Math.floor(t*7)%2!==0});
+  }
+ }
  for(let i=0;i<Math.round(this.walkers.length*(config.pedestrianDensity??.7));i++){
   const ped=this.walkers[i],zx=ped.x+Math.sin(t*ped.walk+ped.phase)*2.2,zz=ped.z+Math.cos(t*ped.walk+ped.phase)*2.4;
   // CPU meshing is expensive on mobile; do not tessellate people beyond draw range.

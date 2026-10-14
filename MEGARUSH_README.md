@@ -1,4 +1,4 @@
-> Current local milestone: v0.6.0 code verification (at least 46 automated tests); APK **not** compiled, Android GPU **not** tested, Apper **not** deployed.
+> Reference chase pass (2026-10-14): the existing playable WebGL2 game now prioritizes Harbor Chase on the menu, shows server-saved Fun Coins/XP in the gameplay HUD, paints bounded physical Harbor route chevrons, and renders cosmetic police convoy support. These are code changes, not a claim of matching the supplied cinematic video asset-for-asset. No Android APK or GPU visual sign-off is claimed until real device testing.\n\n> Current local milestone: v0.6.0 code verification (at least 46 automated tests); APK **not** compiled, Android GPU **not** tested, Apper **not** deployed.
 
 # MegaRush: The Multi-Verse Map — PUZUNIVO Fifth Game
 

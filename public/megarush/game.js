@@ -16,7 +16,9 @@ async function tryLandscape(){
  try{await screen.orientation?.lock?.('landscape')}catch{}
 }
 function flash(message){$('toast').textContent=message;$('toast').classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.add('hidden'),3500)}
-function account(){if(!boot)return;$('account-line').textContent=boot.profile?`${boot.profile.name} · ${boot.profile.funCoins} Fun Coins · ${boot.profile.xp} XP`:'Play as a guest, or sign in through PUZUNIVO to keep your progress.';}
+function account(){if(!boot)return;$('account-line').textContent=boot.profile?`${boot.profile.name} · ${boot.profile.funCoins} Fun Coins · ${boot.profile.xp} XP`:'Play as a guest, or sign in through PUZUNIVO to keep your progress.';
+ // Values come only from the authenticated server bootstrap; no synthetic wallet or XP.
+ $('coins').textContent=boot.profile?.funCoins??'—';$('xp').textContent=boot.profile?.xp??'—';}
 function roster(){const box=$('character-row');box.innerHTML=characters.map(c=>`<button class="char ${selected===c.id?'active':''}" data-character="${c.id}"><span class="face">${c.icon}</span>${c.name}<small>${c.desc}</small></button>`).join('');box.querySelectorAll('[data-character]').forEach(el=>el.onclick=()=>{selected=el.dataset.character;roster();if(player)player.character=selected;});}
 function showPanel(tab=''){activeTab=tab;$('panel').classList.remove('hidden');$('hud').classList.add('hidden');$('touch').classList.add('hidden');$('mission').classList.add('hidden');roster();account();fillPanel();}
 function fillPanel(){const box=$('panel-content');if(!boot)return;

@@ -7,7 +7,7 @@ import path from 'node:path';
 import net from 'node:net';
 import { DatabaseSync } from 'node:sqlite';
 import { mission,pickupCoords } from '../megarush-api.mjs';
-import { updatePlayer, cameraRelativeInput, MeshBuilder, WebGLWorld, buildCharacterMesh, buildVehicleMesh, trafficPosition, advanceFixedPhysics, cameraSafePosition, onHarborRoad, atHarbor, HARBOR_FINISH, cameraFollowFactor, cinematicCameraProfile } from '../public/megarush/engine.js';
+import { updatePlayer, cameraRelativeInput, MeshBuilder, WebGLWorld, buildCharacterMesh, buildVehicleMesh, trafficPosition, advanceFixedPhysics, cameraSafePosition, onHarborRoad, atHarbor, HARBOR_FINISH, cameraFollowFactor, cinematicCameraProfile, pursuitSupportPositions, harborRouteMarkers } from '../public/megarush/engine.js';
 
 function reservePort() { return new Promise(resolve => {const server=net.createServer();server.listen(0,'127.0.0.1',()=>{const port=server.address().port;server.close(()=>resolve(port))})}) }
 
@@ -674,4 +674,26 @@ test('Cinematic harbor skyline remains generated geometry and chase UI remains s
  assert.match(game,/world\.cameraPitch=Math\.min\(world\.cameraPitch,\.02\)/);
  assert.match(game,/dataset\.pursuit=player\.chaseActive/);
  assert.doesNotMatch(engine,/https?:\/\/[^\s]+\.glb/);
+});
+
+
+test('Reference Harbor guidance is bounded, finite, and aligned to the real road',()=>{
+ const arrows=harborRouteMarkers(0,0);
+ assert.ok(arrows.length>0&&arrows.length<=7);
+ assert.ok(arrows.every(p=>p.x===0&&p.z>4&&p.z<=112&&Number.isFinite(p.y)));
+ assert.deepEqual(harborRouteMarkers(90,0),[]);
+ assert.deepEqual(harborRouteMarkers(0,NaN),[]);
+ assert.deepEqual(harborRouteMarkers(0,118),[]);
+ assert.ok(harborRouteMarkers(0,78).every(p=>p.y>1.8),'raised harbor road markers must follow the elevated bridge');
+});
+
+test('Police convoy reinforcements are visual and require an active pursuit',()=>{
+ const player={x:0,z:30,policeX:0,policeZ:10,chaseActive:true};
+ const escorts=pursuitSupportPositions(player);
+ assert.equal(escorts.length,2);
+ assert.ok(escorts.every(v=>Object.values(v).every(Number.isFinite)));
+ assert.ok(escorts.every(v=>v.z<player.policeZ));
+ assert.notEqual(escorts[0].x,escorts[1].x);
+ assert.deepEqual(pursuitSupportPositions({...player,chaseActive:false}),[]);
+ assert.deepEqual(pursuitSupportPositions({...player,policeX:NaN}),[]);
 });
