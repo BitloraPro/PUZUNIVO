@@ -72,6 +72,36 @@ async function inspect(label, opts) {
     assert.match(state.distance || '', /\d+ m$/);
     assert.ok(state.health?.includes('♥'), 'HUD hearts must be connected to gameplay');
     assert.deepEqual(errors, [], 'Unhandled browser errors are not acceptable');
+    // Real movement must update the live mission distance, and pausing must
+    // persist that position to the SQLite session rather than only local state.
+    if (!opts.isMobile) {
+      const initialDistance = Number.parseInt(state.distance, 10);
+      await page.keyboard.down('w');
+      try {
+        await page.waitForFunction(
+          start => {
+            const current = Number.parseInt(document.getElementById('chase-distance')?.textContent || '', 10);
+            return Number.isFinite(current) && current <= start - 2;
+          },
+          initialDistance,
+          { timeout: 20000 },
+        );
+      } finally {
+        await page.keyboard.up('w');
+      }
+      await page.locator('#menu-btn').click();
+      await page.waitForFunction(
+        async () => {
+          const response = await fetch('/api/megarush/session/active', { credentials: 'same-origin' });
+          const run = await response.json();
+          return run.active === true && run.z >= 2;
+        },
+        null,
+        { timeout: 15000, polling: 300 },
+      );
+      await page.locator('#play').click();
+      console.log('DESKTOP MOVEMENT: real canvas input moved toward Harbor and paused position was saved to SQLite');
+    }
     console.log(label.toUpperCase() + ': ' + JSON.stringify(state));
   } finally {
     await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
