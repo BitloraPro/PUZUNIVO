@@ -280,7 +280,23 @@ export function buildVehicleMesh(mesh,{x,y=0,z,angle=0,color='#e99a4b',police=fa
   box(side*.8,.53,-2.12,.4,.17,.06,'#fc5464');
   box(side*1.13,.65,-.1,.047,.13,.42,'#aab7cc');
  }
- if(police){box(0,.37,-.2,2.25,.19,3.6,'#f7f8fc');box(0,1.73,-.18,1.13,.16,.45,flash?'#fd365b':'#42ddff');}
+ if(police){
+  // Geometry-only police livery, animated lightbar and realistic rear silhouette.
+  // Flash state is passed by the renderer; no network or reward data is invented.
+  box(0,.37,-.2,2.25,.19,3.6,'#f7f8fc');
+  box(0,1.73,-.18,1.24,.13,.54,'#1d2d47');
+  box(-.39,1.81,-.18,.46,.12,.38,flash?'#fc335b':'#79334b');
+  box(.39,1.81,-.18,.46,.12,.38,flash?'#2873b9':'#3be8ff');
+  box(0,.99,-1.32,1.65,.13,.09,'#e3eff6');
+  box(0,.45,-2.17,1.65,.11,.09,'#192941');
+  box(0,.33,-2.18,.60,.27,.085,'#e6ebea');
+  for(const side of [-1,1]){
+   box(side*.78,.54,-2.16,.62,.18,.10,flash?'#fb3e61':'#d42c45');
+   box(side*.99,.53,2.14,.27,.16,.10,'#e5f1fc');
+   box(side*1.145,.57,-.35,.05,.16,2.25,'#f6f7fa');
+   box(side*.92,1.12,-.35,.07,.18,.8,'#15233a');
+  }
+ }
  return mesh;
 }
 
