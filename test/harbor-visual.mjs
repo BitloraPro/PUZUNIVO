@@ -45,7 +45,7 @@ async function inspect(label, opts) {
       null,
       { timeout: 45000 },
     );
-    await page.waitForTimeout(1400);
+    await page.waitForTimeout(4100);
     const state = await page.evaluate(() => {
       const canvas = document.getElementById('world');
       const hud = document.getElementById('hud');
@@ -60,11 +60,13 @@ async function inspect(label, opts) {
         health: document.getElementById('health-stat')?.textContent,
         hudVisible: !hud?.classList.contains('hidden'),
         fps: document.getElementById('fps')?.textContent,
+        centerElement: document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.id,
       };
     });
     assert.ok(state.gl && state.width > 100 && state.height > 100, 'WebGL2 surface must render');
     assert.equal(state.mission, 'Escape the chase');
     assert.equal(state.hudVisible, true);
+    assert.equal(state.centerElement, 'world', 'No giant mission card may cover the playable center of the scene');
     assert.match(state.distance || '', /\d+ m$/);
     assert.ok(state.health?.includes('♥'), 'HUD hearts must be connected to gameplay');
     assert.deepEqual(errors, [], 'Unhandled browser errors are not acceptable');
