@@ -182,6 +182,7 @@ test('MegaRush uses existing PUZUNIVO session, checks anti-duplicate purchases a
  assert.equal(chaseStart.status,200);
  assert.equal(chaseStart.body.mission,'harbor_challenge');
  assert.equal(chaseStart.body.chaseActive,true);
+ assert.deepEqual([chaseStart.body.policeX,chaseStart.body.policeZ],[-7,22], 'police vehicle starts a real front-left boulevard intercept');
  const duplicateMission=await request('/api/megarush/mission/chase/start',{sessionId:chaseRun.body.id});
  assert.equal(duplicateMission.status,200);
  assert.equal(duplicateMission.body.duplicate,true);
