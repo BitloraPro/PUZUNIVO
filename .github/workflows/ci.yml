@@ -18,3 +18,5 @@ jobs:
         run: npm run check
       - name: Run PUZUNIVO and MegaRush regression tests
         run: npm test
+      - name: Run Apper frontend included engine tests
+        run: node --test apper-app/tests/*.test.mjs

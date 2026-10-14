@@ -116,3 +116,7 @@ The independently runnable package now includes a fifth **WebGL2 open-world game
 - Android debug build: `.github/workflows/android-debug-megarush.yml` has manual `server_url` input. It refuses to compile if the HTTPS origin does not expose the expected PUZUNIVO MegaRush endpoints and 3D assets. Builds a **debug** APK artifact only after validating the real remote backend. A release-signed Google Play AAB is a separate, uncompleted milestone.
 - Do not commit private environment settings, passwords, databases or developer signing keys to this public repository.
 - The 3D model is an original procedural low-poly implementation, not an AAA capture of the visual reference. Any claims of exact visual match, Android GPU validation, or Apper deployment require independent evidence.
+
+## Apper frontend (MegaRush 3D)
+
+The connected Apper React app is preserved separately in [`apper-app/`](./apper-app/README.md), including the `/megarush` 3D gameplay route, WebGL2 engine and source specification. The repository root remains the independent Node.js/SQLite version. This is a source sync, not a shared runtime or automatic database migration.
