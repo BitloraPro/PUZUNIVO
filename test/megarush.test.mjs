@@ -623,3 +623,16 @@ test('PUZUNIVO public portal displays only MegaRush and preserves old puzzle dat
  const legacy=readFileSync(new URL('../logic.mjs',import.meta.url),'utf8');
  assert.match(legacy,/Number Series|number/i,'no deletion of live user records or shared schemas');
 });
+
+test('Cinematic harbor skyline remains generated geometry and chase UI remains server gated',()=>{
+ const engine=readFileSync(new URL('../public/megarush/engine.js',import.meta.url),'utf8');
+ const game=readFileSync(new URL('../public/megarush/game.js',import.meta.url),'utf8');
+ assert.match(engine,/Cinematic waterfront pass/);
+ assert.match(engine,/for\(let i=0;i<32;i\+\+\)/);
+ assert.match(engine,/Warm boardwalk festoons/);
+ assert.match(engine,/Tall geometric roof signs/);
+ assert.match(game,/mission\/chase\/start/);
+ assert.match(game,/world\.cameraPitch=Math\.min\(world\.cameraPitch,\.02\)/);
+ assert.match(game,/dataset\.pursuit=player\.chaseActive/);
+ assert.doesNotMatch(engine,/https?:\/\/[^\s]+\.glb/);
+});
