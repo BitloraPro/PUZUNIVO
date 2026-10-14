@@ -39,7 +39,7 @@ test('opening localhost root redirects to MegaRush 3D instead of Apper SDK spinn
   const vite = read('apper-app/vite.local.config.js');
   assert.match(vite, /local-megarush-home/);
   assert.match(vite, /configureServer/);
-  assert.match(vite, /\/index\\.html/);
-  assert.match(vite, /Location: '\/megarush-local\\.html'/);
+  assert.ok(vite.includes("'/index.html'"));
+  assert.ok(vite.includes("Location: '/megarush-local.html'"));
   assert.match(vite, /Cache-Control/);
 });
