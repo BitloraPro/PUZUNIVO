@@ -109,7 +109,7 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
      }
      const collectedIds=all('SELECT item_id FROM mr_pickups WHERE user_id=? AND level=?',user.id,s.level).map(r=>r.item_id);
      return json(res,200,{active:true,id:s.id,level:s.level,character:s.character,
-       x:s.x,z:s.z,state:{vehicle:s.vehicle,hp:s.hp,heat:s.heat,angle:s.facing,policeX:s.police_x,policeZ:s.police_z,cameraYaw:s.view_yaw,chaseActive:!!s.chase_active,carSlot:s.car_slot,wantedState:s.wanted_state},harborReached:!!s.harbor_reached,
+       x:s.x,z:s.z,state:{vehicle:s.vehicle,hp:s.hp,heat:s.heat,angle:s.facing,policeX:s.police_x,policeZ:s.police_z,cameraYaw:s.view_yaw,chaseActive:!!s.chase_active,carSlot:s.car_slot,wantedState:s.wanted_state},incidentType:s.incident_type,harborReached:!!s.harbor_reached,
        mission:{...mission(s.level),targetCollectibles:s.required_orbs},
        pickups:pickupCoords(s.level,{},s.pickup_count),collectedIds});
    }
@@ -122,11 +122,24 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
      const id=uuid(),t=now(),snapshot=settings(),runMission=mission(p.level,snapshot),runPickups=pickupCoords(p.level,snapshot);
      run('INSERT INTO mr_sessions(id,user_id,level,character,started_at,last_seen,x,z,required_orbs,pickup_count,vehicle,heat,chase_active,police_x,police_z) VALUES(?,?,?,?,?,?,0,0,?,?,?,?,0,-12,20)',id,user.id,p.level,b.character,t,t,runMission.targetCollectibles,runPickups.length,'skate',0);
      run('UPDATE mr_progress SET equipped_character=?,updated_at=? WHERE user_id=?',b.character,t,user.id);
-     return json(res,201,{id,level:p.level,mission:runMission,harborReached:false,pickups:runPickups,collectedIds:all('SELECT item_id FROM mr_pickups WHERE user_id=? AND level=?',user.id,p.level).map(r=>r.item_id)});
+     return json(res,201,{id,level:p.level,mission:runMission,incidentType:'',harborReached:false,pickups:runPickups,collectedIds:all('SELECT item_id FROM mr_pickups WHERE user_id=? AND level=?',user.id,p.level).map(r=>r.item_id)});
    }
    // Patrol is the default; only a player-triggered, server-recorded incident
    // can activate police. A browser cannot earn the harbor reward merely by
    // forging a chaseActive flag in its session heartbeat.
+   // Opt-in Harbor Chase stays in the existing authenticated player session.
+   if(route==='/api/megarush/mission/chase/start'&&method==='POST'){
+     checkPlayer(user);throttle('mr-chase-'+user.id,8);
+     const b=await requireBody(req),s=currentSession(user,b.sessionId),p=progress(user);
+     if(s.level!==p.level)throw fail(409,'Level has changed');
+     if(s.incident_type==='harbor_challenge')return json(res,200,{ok:true,duplicate:true,chaseActive:!!s.chase_active,harborReached:!!s.harbor_reached,heat:s.heat,wantedState:s.wanted_state});
+     if(s.incident_type||s.harbor_reached)throw fail(409,'Another mission is already running');
+     if(Math.abs(s.x)>55||s.z>55||s.z< -100)throw fail(409,'Start Harbor Chase from downtown streets');
+     const changed=run("UPDATE mr_sessions SET incident_type='harbor_challenge',wanted_state='chase',chase_active=1,heat=0.92,police_x=x-3,police_z=z-20 WHERE id=? AND incident_type='' AND ended_at IS NULL",s.id).changes;
+     if(!changed)throw fail(409,'Chase mission already started');
+     run('INSERT INTO events(user_id,kind,details,created_at) VALUES(?,?,?,?)',user.id,'megarush_harbor_challenge',JSON.stringify({sessionId:s.id,level:s.level}),now());
+     return json(res,200,{ok:true,chaseActive:true,heat:0.92,wantedState:'chase',mission:'harbor_challenge'});
+   }
    if(route==='/api/megarush/incident'&&method==='POST'){
      checkPlayer(user);throttle('mr-incident-'+user.id,12);
      const body=await requireBody(req),s=currentSession(user,body.sessionId);
