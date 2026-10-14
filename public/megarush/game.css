@@ -341,3 +341,19 @@ body:has(#hud:not(.hidden)) .touch .actionpad .sprint {border:2px solid #59ffca;
  body:has(#hud:not(.hidden)) .minimap {top:6px;left:9px;width:clamp(80px,18vh,124px);height:clamp(80px,18vh,124px)}
  body:has(#hud:not(.hidden)) .hud-cluster {top:45px}
 }
+
+/* The actual game world must never be obscured by a stretched mission overlay.
+   During pursuit the mission is the TOP objective; reveal Finish Zone only
+   after the authoritative server checkpoint unlocks it. */
+body:has(#hud:not(.hidden)) .mission {
+  top: auto !important;
+  bottom: max(9px, env(safe-area-inset-bottom)) !important;
+  min-height: 0 !important;
+  height: fit-content !important;
+  max-height: min(132px, 24vh) !important;
+  display: none;
+  overflow: hidden;
+}
+body:has(#hud:not(.hidden)) .mission:has(#finish:not(:disabled)) {
+  display: block;
+}
