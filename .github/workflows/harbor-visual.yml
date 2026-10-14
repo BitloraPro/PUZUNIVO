@@ -1,0 +1,46 @@
+name: Harbor Chase real-browser visual audit
+on:
+  pull_request:
+    paths:
+      - 'public/megarush/**'
+      - 'server.mjs'
+      - 'megarush-api.mjs'
+      - 'test/harbor-visual.mjs'
+      - '.github/workflows/harbor-visual.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  render-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated headless browser
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Boot actual Node and SQLite game server
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/megarush-data"
+          PORT=3000 PUZUNIVO_DATA_DIR="$RUNNER_TEMP/megarush-data" node server.mjs > "$RUNNER_TEMP/harbor-server.log" 2>&1 &
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:3000/api/megarush/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3000/api/megarush/health
+      - name: Check 3D scene and capture landscape evidence
+        run: node test/harbor-visual.mjs
+      - name: Upload desktop, Android-sized screenshots, and server log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harbor-chase-visual-evidence
+          path: |
+            artifacts/harbor-*.png
+            ${{ runner.temp }}/harbor-server.log
+          if-no-files-found: warn
