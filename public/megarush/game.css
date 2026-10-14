@@ -357,3 +357,12 @@ body:has(#hud:not(.hidden)) .mission {
 body:has(#hud:not(.hidden)) .mission:has(#finish:not(:disabled)) {
   display: block;
 }
+
+/* Five reference-style controls. Interact toggles skate on the ground and
+   still climbs while airborne. Desktop B toggle remains supported. */
+body:has(#hud:not(.hidden)) .actionpad button[data-key="skate"] { display:none; }
+body:has(#hud:not(.hidden)) .actionpad button[data-key="ride"] { grid-column:1;grid-row:1; }
+body:has(#hud:not(.hidden)) .actionpad button[data-key="climb"] { grid-column:2;grid-row:1; }
+body:has(#hud:not(.hidden)) .actionpad button[data-key="trick"] { grid-column:1;grid-row:2; }
+body:has(#hud:not(.hidden)) .actionpad button[data-key="jump"] { grid-column:2;grid-row:2; }
+body:has(#hud:not(.hidden)) .actionpad button[data-key="sprint"] { grid-column:3;grid-row:2; }
