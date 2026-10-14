@@ -132,13 +132,13 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
      checkPlayer(user);throttle('mr-chase-'+user.id,8);
      const b=await requireBody(req),s=currentSession(user,b.sessionId),p=progress(user);
      if(s.level!==p.level)throw fail(409,'Level has changed');
-     if(s.incident_type==='harbor_challenge')return json(res,200,{ok:true,duplicate:true,chaseActive:!!s.chase_active,harborReached:!!s.harbor_reached,heat:s.heat,wantedState:s.wanted_state});
+     if(s.incident_type==='harbor_challenge')return json(res,200,{ok:true,duplicate:true,chaseActive:!!s.chase_active,harborReached:!!s.harbor_reached,heat:s.heat,wantedState:s.wanted_state,policeX:s.police_x,policeZ:s.police_z});
      if(s.incident_type||s.harbor_reached)throw fail(409,'Another mission is already running');
      if(Math.abs(s.x)>55||s.z>55||s.z< -100)throw fail(409,'Start Harbor Chase from downtown streets');
-     const changed=run("UPDATE mr_sessions SET incident_type='harbor_challenge',wanted_state='chase',chase_active=1,heat=0.92,police_x=x-3,police_z=z-20 WHERE id=? AND incident_type='' AND ended_at IS NULL",s.id).changes;
+     const changed=run("UPDATE mr_sessions SET incident_type='harbor_challenge',wanted_state='chase',chase_active=1,heat=0.92,police_x=x-7,police_z=z+22 WHERE id=? AND incident_type='' AND ended_at IS NULL",s.id).changes;
      if(!changed)throw fail(409,'Chase mission already started');
      run('INSERT INTO events(user_id,kind,details,created_at) VALUES(?,?,?,?)',user.id,'megarush_harbor_challenge',JSON.stringify({sessionId:s.id,level:s.level}),now());
-     return json(res,200,{ok:true,chaseActive:true,heat:0.92,wantedState:'chase',mission:'harbor_challenge'});
+     return json(res,200,{ok:true,chaseActive:true,heat:0.92,wantedState:'chase',policeX:s.x-7,policeZ:s.z+22,mission:'harbor_challenge'});
    }
    if(route==='/api/megarush/incident'&&method==='POST'){
      checkPlayer(user);throttle('mr-incident-'+user.id,12);
@@ -205,6 +205,23 @@ export function attachMegaRush({db,one,all,run,json,fail,now,uuid,enforce,admin,
        db.exec('COMMIT');
        return json(res,200,{ok:true,awarded:inserted===1,level:next,funCoins:one('SELECT coins FROM users WHERE id=?',user.id).coins});
      }catch(e){db.exec('ROLLBACK');throw e}
+   }
+   // A real crash checkpoint must be committed before the client teleports;
+   // otherwise the next anti-teleport heartbeat rejects legitimate recovery.
+   // The server never awards coins or progression for a respawn.
+   if(route==='/api/megarush/session/respawn'&&method==='POST'){
+     checkPlayer(user);throttle('mr-respawn-'+user.id,10);
+     const b=await requireBody(req),s=currentSession(user,b.sessionId),p=progress(user);
+     if(s.level!==p.level)throw fail(409,'Level has changed');
+     const chase=s.chase_active===1&&!s.harbor_reached;
+     const heat=chase?0.92:0;
+     const wanted=chase?'chase':'patrol';
+     run("UPDATE mr_sessions SET x=0,z=0,vehicle='skate',car_slot=-1,hp=3,heat=?,police_x=-7,police_z=22,facing=0,view_yaw=0,wanted_state=?,last_seen=? WHERE id=? AND user_id=? AND ended_at IS NULL",
+       heat,wanted,now(),s.id,user.id);
+     return json(res,200,{ok:true,x:0,z:0,state:{
+       hp:3,vehicle:'skate',carSlot:-1,heat,policeX:-7,policeZ:22,
+       chaseActive:chase,wantedState:wanted,cameraYaw:0,angle:0
+     }});
    }
    if(route==='/api/megarush/session/end'&&method==='POST'){
      checkPlayer(user);const b=await requireBody(req);

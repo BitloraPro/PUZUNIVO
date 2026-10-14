@@ -182,6 +182,7 @@ test('MegaRush uses existing PUZUNIVO session, checks anti-duplicate purchases a
  assert.equal(chaseStart.status,200);
  assert.equal(chaseStart.body.mission,'harbor_challenge');
  assert.equal(chaseStart.body.chaseActive,true);
+ assert.deepEqual([chaseStart.body.policeX,chaseStart.body.policeZ],[-7,22], 'police vehicle starts a real front-left boulevard intercept');
  const duplicateMission=await request('/api/megarush/mission/chase/start',{sessionId:chaseRun.body.id});
  assert.equal(duplicateMission.status,200);
  assert.equal(duplicateMission.body.duplicate,true);
@@ -193,6 +194,21 @@ test('MegaRush uses existing PUZUNIVO session, checks anti-duplicate purchases a
    id:chaseRun.body.id,x:0,z:112,state:{...savedMission.body.state}
  })).status,400,'harbor teleport is rejected');
  assert.equal((await request('/api/megarush/level/complete',{sessionId:chaseRun.body.id})).status,409,'chase start alone never earns rewards');
+ // Crash recovery is a server-authoritative position reset, so the next
+ // heartbeat is not rejected as an impossible 100-metre teleport.
+ assert.equal((await request('/api/megarush/session/respawn',{sessionId:'invalid'})).status,409);
+ const recovered=await request('/api/megarush/session/respawn',{sessionId:chaseRun.body.id});
+ assert.equal(recovered.status,200);
+ assert.deepEqual([recovered.body.x,recovered.body.z,recovered.body.state.hp],[0,0,3]);
+ assert.equal(recovered.body.state.chaseActive,true,'a crash cannot silently cancel Harbor Chase');
+ const restoredAfterCrash=await request('/api/megarush/session/active');
+ assert.deepEqual([restoredAfterCrash.body.x,restoredAfterCrash.body.z],[0,0]);
+ assert.equal(restoredAfterCrash.body.state.vehicle,'skate');
+ assert.equal(restoredAfterCrash.body.state.hp,3);
+ assert.equal(restoredAfterCrash.body.state.chaseActive,true);
+ assert.equal((await request('/api/megarush/session/heartbeat',{id:chaseRun.body.id,x:0,z:0,state:restoredAfterCrash.body.state})).status,200,
+   'the next local heartbeat succeeds after an actual server checkpoint');
+
 });
 
 test('Sprint increases traversal speed without altering normal movement and police collision damages once per cooldown',()=>{
@@ -671,7 +687,7 @@ test('Cinematic harbor skyline remains generated geometry and chase UI remains s
  assert.match(engine,/Warm boardwalk festoons/);
  assert.match(engine,/Tall geometric roof signs/);
  assert.match(game,/mission\/chase\/start/);
- assert.match(game,/world\.cameraPitch=Math\.min\(world\.cameraPitch,\.02\)/);
+ assert.match(game,/world\.cameraPitch=-\.17/,'reference camera now aims toward the coastal skyline');
  assert.match(game,/dataset\.pursuit=player\.chaseActive/);
  assert.doesNotMatch(engine,/https?:\/\/[^\s]+\.glb/);
 });

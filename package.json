@@ -9,6 +9,6 @@
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test test/*.test.mjs",
-    "check": "node --check server.mjs && node --check public/app.js && node --check public/admin.js && node --check logic.mjs && node --check public/megarush/game.js && node --check public/megarush/engine.js && node --check public/megarush/admin.js"
+    "check": "node --check server.mjs && node --check megarush-api.mjs && node --check public/app.js && node --check public/admin.js && node --check logic.mjs && node --check public/megarush/game.js && node --check public/megarush/engine.js && node --check public/megarush/admin.js"
   }
 }
