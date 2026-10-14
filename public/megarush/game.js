@@ -170,6 +170,38 @@ function drawMiniMap(){
  for(const roadX of [-32,0,32]){box(roadX,0,13,190,'#455569');box(roadX-8,0,2,190,'#9aa5b2');box(roadX+8,0,2,190,'#9aa5b2');}
  box(0,-30,185,12,'#455569');
  for(const o of world.obstacles)box(o.x,o.z,o.w,o.d,'#8191a8');
+ // Draw the verified harbor destination and a road-following guidance line.
+ // Navigation uses the same world coordinates as collision and server checkpoint.
+ if(player.chaseActive&&!harborEscaped){
+  const x=wx(HARBOR_FINISH.x),y=wz(HARBOR_FINISH.z);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(1,1,w-2,h-2);
+  ctx.clip();
+  ctx.beginPath();
+  ctx.moveTo(wx(player.x),wz(player.z));
+  // Road approach: align to downtown's central boulevard before the harbor.
+  if(Math.abs(player.x)>6)ctx.lineTo(wx(0),wz(player.z));
+  ctx.lineTo(wx(0),wz(HARBOR_FINISH.z));
+  ctx.strokeStyle='#ffd76e';
+  ctx.lineWidth=3;
+  ctx.setLineDash([7,5]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.arc(x,y,7,0,Math.PI*2);
+  ctx.fillStyle='#fbc94c';
+  ctx.fill();
+  ctx.strokeStyle='#fff7d1';
+  ctx.lineWidth=2;
+  ctx.stroke();
+  ctx.fillStyle='#213352';
+  ctx.font='bold 10px sans-serif';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText('H',x,y+.3);
+  ctx.restore();
+ }
  for(const item of collectibles){if(item.collected)continue;const x=wx(item.x),y=wz(item.z);if(x<0||y<0||x>w||y>h)continue;
   ctx.beginPath();ctx.fillStyle='#ffe66b';ctx.shadowBlur=6;ctx.shadowColor='#ffe66b';ctx.arc(x,y,3.4,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
  }
