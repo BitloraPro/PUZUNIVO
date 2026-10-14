@@ -193,6 +193,21 @@ test('MegaRush uses existing PUZUNIVO session, checks anti-duplicate purchases a
    id:chaseRun.body.id,x:0,z:112,state:{...savedMission.body.state}
  })).status,400,'harbor teleport is rejected');
  assert.equal((await request('/api/megarush/level/complete',{sessionId:chaseRun.body.id})).status,409,'chase start alone never earns rewards');
+ // Crash recovery is a server-authoritative position reset, so the next
+ // heartbeat is not rejected as an impossible 100-metre teleport.
+ assert.equal((await request('/api/megarush/session/respawn',{sessionId:'invalid'})).status,409);
+ const recovered=await request('/api/megarush/session/respawn',{sessionId:chaseRun.body.id});
+ assert.equal(recovered.status,200);
+ assert.deepEqual([recovered.body.x,recovered.body.z,recovered.body.state.hp],[0,0,3]);
+ assert.equal(recovered.body.state.chaseActive,true,'a crash cannot silently cancel Harbor Chase');
+ const restoredAfterCrash=await request('/api/megarush/session/active');
+ assert.deepEqual([restoredAfterCrash.body.x,restoredAfterCrash.body.z],[0,0]);
+ assert.equal(restoredAfterCrash.body.state.vehicle,'skate');
+ assert.equal(restoredAfterCrash.body.state.hp,3);
+ assert.equal(restoredAfterCrash.body.state.chaseActive,true);
+ assert.equal((await request('/api/megarush/session/heartbeat',{id:chaseRun.body.id,x:0,z:0,state:restoredAfterCrash.body.state})).status,200,
+   'the next local heartbeat succeeds after an actual server checkpoint');
+
 });
 
 test('Sprint increases traversal speed without altering normal movement and police collision damages once per cooldown',()=>{
