@@ -91,17 +91,35 @@ function pressAction(action){if(!running||!player)return;
     // Rejoin traffic at the exit position instead of spawning a duplicate car.
     vehicle.position=((player.z+95-gameTime*vehicle.speed)%188+188)%188;
    }
-   player.carSlot=-1;player.vehicle='foot';flash('Back on foot');return;
+   player.carSlot=-1;
+   player.vehicle='foot';
+   player.trickTimer=0;
+   player.vy=0;
+   player.onGround=true;
+   player.crashCooldown=Math.max(player.crashCooldown||0,.4);
+   flash('Back on foot');
+   return;
   }
   const available=world.traffic.map((v,index)=>({v,index,distance:Math.hypot(player.x-v.lane,player.z-trafficPosition(v,gameTime))}))
    .filter(item=>!item.v.occupied&&item.distance<6).sort((a,b)=>a.distance-b.distance)[0];
   if(!available){flash('Approach a traffic vehicle to drive (E)');return}
   available.v.occupied=true;player.carSlot=available.index;
   player.x=available.v.lane;player.z=trafficPosition(available.v,gameTime);
-  player.vehicle='car';flash('Vehicle taken. Reporting incident…');
+  player.vehicle='car';
+  player.trickTimer=0;
+  player.vy=0;
+  player.onGround=true;
+  player.crashCooldown=Math.max(player.crashCooldown||0,.35);
+  flash('Vehicle entered. Keep moving!');
   // Only server-confirmed criminal actions start a wanted pursuit.
   reportCrime('vehicle_theft').catch(e=>flash('Incident sync failed: '+e.message));
- }else if(action==='skate'){if(player.vehicle==='car'){flash('Leave the car before skating');return}if(player.vehicle==='swim'){flash('Swim back to land to skate');return}player.vehicle=player.vehicle==='skate'?'foot':'skate';flash(player.vehicle==='skate'?'🛹 Skate mode':'Walking mode')}
+ }else if(action==='skate'){
+  if(player.vehicle==='car'){flash('Leave the car before skating');return}
+  if(player.vehicle==='swim'){flash('Swim back to land to skate');return}
+  player.trickTimer=0;
+  player.vehicle=player.vehicle==='skate'?'foot':'skate';
+  flash(player.vehicle==='skate'?'🛹 Skate mode':'Walking mode');
+ }
  else if(action==='trick'){
   if(player.vehicle==='skate'&&player.onGround&&player.trickTimer<=0){player.vy=Math.max(player.vy,7.8);player.onGround=false;player.trickTimer=.72;flash('✨ 360° Kickflip!')}
   else flash('Land your board before the next trick.');
