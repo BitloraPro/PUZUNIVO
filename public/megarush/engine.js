@@ -160,6 +160,8 @@ export class MeshBuilder{
 // Character mesh is animated every frame from actual movement state. Rounded head,
 // articulated joints, hair, clothes and board are original generated 3D geometry.
 export function buildCharacterMesh(mesh,player,t){
+ // A driver uses the vehicle mesh instead of a standing rider; prevents overlapping silhouettes.
+ if(player.vehicle==='car')return mesh;
  const palette={rylee:['#1286fc','#182039','#202a43'],zara:['#f864c2','#34304d','#37435c'],leo:['#f5ae50','#212d43','#3d4965']}[player.character]||['#1286fc','#182039','#202a43'];
  const x=player.x,z=player.z,y=player.y,a=player.angle||0,ca=Math.cos(a),sa=Math.sin(a),speed=Math.hypot(player.vx||0,player.vz||0);
  const skate=player.vehicle==='skate',airborne=!player.onGround;
@@ -206,6 +208,14 @@ export function buildCharacterMesh(mesh,player,t){
  box(-.17,shoulder-.49,.294,.23,.13,.019,'#c6ef56');
  box(.18,shoulder-.32,.294,.26,.07,.02,'#f0a2df');
  box(0,shoulder-.78,.29,.51,.16,.06,'#27314a');
+ // Original streetwear: layered jacket seams, sleeve cuffs and asymmetric graffiti.
+ for(const side of [-1,1]){
+  box(side*.385,shoulder-.43,.29,.055,.55,.035,side<0?'#326c83':'#3b5168');
+  box(side*.51,shoulder-.72,.11,.17,.095,.17,'#111b2e');
+ }
+ box(-.22,shoulder-.24,.303,.23,.07,.024,'#58f3bf');
+ box(.16,shoulder-.51,.306,.31,.09,.027,'#ea69b3');
+ box(.09,shoulder-.61,.308,.13,.07,.028,'#c7fd56');
  ball(0,shoulder-.03,-.13,.44,.28,.32,jacket);
  limb(0,shoulder+.05,0,0,shoulder+.29,0,.145,'#d1a47d');
  ball(0,shoulder+.44,0,.38,.39,.34,'#e7b18b');
@@ -216,7 +226,15 @@ export function buildCharacterMesh(mesh,player,t){
   ball(side*.146-.018,shoulder+.52,.351,.023,.024,.018,'#f3fbff');
  }
  box(0,shoulder+.27,.352,.14,.026,.025,'#a85b6a');
+ // Face geometry exists ONLY on local +Z. The rear receives a solid dark hair cap.
  ball(0,shoulder+.71,-.08,.39,.23,.36,palette[0]);
+ ball(0,shoulder+.57,-.305,.35,.28,.125,'#103e84');
+ for(let side of [-1,1]){
+  ball(side*.27,shoulder+.59,-.22,.14,.21,.16,side<0?'#1675d6':'#1455b3');
+ }
+ // A raised brow and subtle nose read clearly from third-person camera angles.
+ for(const side of [-1,1])box(side*.145,shoulder+.60,.351,.17,.035,.025,'#26334b');
+ ball(0,shoulder+.39,.347,.067,.10,.055,'#cd9477');
  for(let j=0;j<7;j++){
   const xx=(j-3)*.105;const p=at(xx,shoulder+.73+Math.abs(Math.sin(j*2.2))*.08,.23);
   mesh.cylinder(p,at(xx+.05,shoulder+.53,.30),.074,j%2?'#1a79d9':palette[0],6);
@@ -225,6 +243,13 @@ export function buildCharacterMesh(mesh,player,t){
  // Little backpack depth makes the in-game third-person silhouette readable.
  box(0,shoulder-.38,-.39,.53,.62,.2,'#111a2d');
  box(0,shoulder-.22,-.50,.28,.17,.04,'#59dfc4');
+ // Back-of-jacket patches, straps and diagonal accent: visible in chase camera.
+ for(const side of [-1,1]){
+  box(side*.25,shoulder-.35,-.50,.10,.65,.055,'#405977');
+  box(side*.27,shoulder-.60,-.52,.25,.10,.06,side<0?'#ba6bdf':'#88d84b');
+ }
+ box(0,shoulder-.13,-.52,.29,.13,.065,'#60f0bc');
+ box(0,shoulder-.44,-.53,.38,.09,.065,'#cf7bdf');
  // Physical carving posture: animated body leans slightly into a fast run,
  // without tipping the wheels or the contact shadow into the road.
  const lean=clamp(speed/24,0,.20)*(skate?1:.40);
@@ -567,7 +592,11 @@ export class WebGLWorld{
  const dynamic=new MeshBuilder();const px=player.x,py=player.y,pz=player.z;
   // All avatar limbs, face, cosmetics and skateboard are actual animated 3D meshes.
   if(player.vehicle==='foot'||player.vehicle==='skate')buildCharacterMesh(dynamic,player,t);
-  else buildVehicleMesh(dynamic,{x:player.x,y:player.y,z:player.z,angle:player.angle||0,color:player.vehicle==='car'?'#fa5770':'#f9ac3c'});
+  else if(player.vehicle==='car'){
+   // Reuse the occupied traffic car's identity and paint. Never draw an avatar atop its roof.
+   const occupied=this.traffic[player.carSlot];
+   buildVehicleMesh(dynamic,{x:player.x,y:player.y,z:player.z,angle:player.angle||0,color:occupied?.color||'#e99a4b'});
+  }else buildVehicleMesh(dynamic,{x:player.x,y:player.y,z:player.z,angle:player.angle||0,color:'#f9ac3c'});
  // A moving neon skateboard trail at real wheel height. Speed determines
  // segment length; it vanishes when stationary or in the car.
  if(player.vehicle==='skate'&&Math.hypot(player.vx||0,player.vz||0)>3){
