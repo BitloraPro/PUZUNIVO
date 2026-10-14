@@ -165,6 +165,7 @@ export function buildCharacterMesh(mesh,player,t){
  const palette={rylee:['#1286fc','#182039','#202a43'],zara:['#f864c2','#34304d','#37435c'],leo:['#f5ae50','#212d43','#3d4965']}[player.character]||['#1286fc','#182039','#202a43'];
  const x=player.x,z=player.z,y=player.y,a=player.angle||0,ca=Math.cos(a),sa=Math.sin(a),speed=Math.hypot(player.vx||0,player.vz||0);
  const skate=player.vehicle==='skate',airborne=!player.onGround;
+ const runningPush=skate&&speed>2&&player.onGround;
  const trick=skate&&player.trickTimer>0?Math.min(1,Math.max(0,1-player.trickTimer/.72)):0;
  const trickArc=Math.sin(trick*Math.PI);
  const gait=Math.sin(t*(skate?8:11))*Math.min(1,speed/3),crouch=skate?.24+.22*trickArc:.0;
@@ -191,11 +192,13 @@ export function buildCharacterMesh(mesh,player,t){
  const hips=1.05-crouch+bob,shoulder=1.73-crouch+bob;
  box(0,hips-.17,0,.63,.45,.43,'#29354c');
  for(const side of [-1,1]){
-  const step=skate?side*.13:gait*.35*side;
+  const push=runningPush&&side===1?Math.max(0,Math.sin(t*7.2))*Math.min(.42,speed*.04):0;
+  const step=skate?side*.13+push:gait*.35*side;
   const knee=[side*.22,.63-crouch*.5+bob,.10+step],ankle=[side*.24,.24+bob,.13-step*.45];
   limb(side*.19,hips,0,...knee,.18,'#3c4c67');
   limb(...knee,...ankle,.16,palette[2]);ball(...knee,.18,.18,.18,'#314057');
-  box(side*.24,.10+bob,.29,.31,.19,.56,side===1?'#f4f7ff':'#bec8e6');
+  box(side*.24,.10+bob,.29-step*.18,.33,.19,.60,side===1?'#f4f7ff':'#bec8e6');
+  box(side*.24,.11+bob,.59-step*.18,.28,.07,.11,'#1a253c');
   // Shoulder / elbow / wrist move differently during skating, jogging and jumps.
   const swing=skate?-.23:(gait*side*.22);const elbow=[side*.59,shoulder-.46,.04+swing];
   const wrist=[side*(airborne?1.05:.65),shoulder-.81,airborne?.22:-.09+swing];
@@ -595,6 +598,7 @@ export class WebGLWorld{
   else if(player.vehicle==='car'){
    // Reuse the occupied traffic car's identity and paint. Never draw an avatar atop its roof.
    const occupied=this.traffic[player.carSlot];
+   // The vehicle body is rendered once; a tinted windshield hides the seated driver.
    buildVehicleMesh(dynamic,{x:player.x,y:player.y,z:player.z,angle:player.angle||0,color:occupied?.color||'#e99a4b'});
   }else buildVehicleMesh(dynamic,{x:player.x,y:player.y,z:player.z,angle:player.angle||0,color:'#f9ac3c'});
  // A moving neon skateboard trail at real wheel height. Speed determines
@@ -604,7 +608,8 @@ export class WebGLWorld{
   for(const side of [-1,1])for(let j=0;j<3;j++){
    const offset=side*.33,back=(j*.55+.3+Math.sin(t*15+j)*.08),len=Math.min(3,speed*.17)*(1-j*.22);
    const x0=px+offset*c-s*back,z0=pz-offset*s-c*back;
-   dynamic.beam([x0,.095,z0],[x0-s*len,.035,z0-c*len],.048-j*.008,side>0?'#3dfbbc':'#8cfafa');
+   const height=this.elevation(x0,z0);
+   dynamic.beam([x0,height+.095,z0],[x0-s*len,height+.035,z0-c*len],.048-j*.008,side>0?'#3dfbbc':'#8cfafa');
   }
  }
  // Patrol helicopter becomes visible above the harbor on approach to the coast.
