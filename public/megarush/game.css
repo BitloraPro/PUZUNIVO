@@ -184,3 +184,128 @@ body:has(#hud:not(.hidden)) .touch .actionpad .sprint {
     height: 72px;
   }
 }
+
+/* Reference-composition gameplay pass: mission top-center, true playable world
+   unobstructed through middle, minimap top-left, actions in the lower corners.
+   Applied only during gameplay; the menu and admin remain untouched. */
+body:has(#hud:not(.hidden)) .top {
+  background: #0917259c;
+  border-color: #ffffff35;
+}
+body:has(#hud:not(.hidden)) .hud {
+  top: max(8px, env(safe-area-inset-top));
+}
+body:has(#hud:not(.hidden)) .hud-cluster {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(60px, calc(env(safe-area-inset-right) + 60px));
+  left: auto;
+  margin: 0;
+  max-width: 35vw;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+body:has(#hud:not(.hidden)) .objective {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(200px, 25vw, 400px);
+  max-width: 28vw;
+  min-width: 0;
+  text-align: left;
+  font-size: clamp(10px, 1vw, 15px);
+  font-weight: 900;
+  background: #101d2bcf;
+  border: 1px solid #ffffff40;
+  border-left: 4px solid #efc54b;
+  border-radius: 6px;
+}
+body:has(#hud:not(.hidden)) .waypoint {
+  position: fixed;
+  top: max(47px, calc(env(safe-area-inset-top) + 47px));
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 28vw;
+  width: clamp(200px, 25vw, 400px);
+  justify-content: flex-start;
+  background: #101b2aca;
+}
+body:has(#hud:not(.hidden)) .minimap {
+  top: 2px;
+  left: 5px;
+  width: clamp(108px, 13vw, 184px);
+  height: clamp(108px, 13vw, 184px);
+}
+body:has(#hud:not(.hidden)) .mission {
+  position: fixed;
+  top: max(83px, calc(env(safe-area-inset-top) + 83px));
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translateX(-50%);
+  width: clamp(200px, 25vw, 400px);
+  max-width: 28vw;
+  padding: 5px 11px;
+  background: #0b1c2aba;
+}
+body:has(#hud:not(.hidden)) .mission .mission-label {
+  display: none;
+}
+body:has(#hud:not(.hidden)) .mission h2 {
+  font-size: 11px;
+  margin: 2px 0;
+}
+body:has(#hud:not(.hidden)) .mission p {
+  margin: 2px 0;
+}
+body:has(#hud:not(.hidden)) .mission .cta {
+  padding: 3px 6px;
+}
+body:has(#hud:not(.hidden)) .touch {
+  bottom: max(14px, env(safe-area-inset-bottom));
+}
+@media (orientation: landscape) and (max-width: 950px) {
+  body:has(#hud:not(.hidden)) .hud-cluster {
+    max-width: 40vw;
+    gap: 3px;
+  }
+  body:has(#hud:not(.hidden)) #where,
+  body:has(#hud:not(.hidden)) #fps {
+    display: none;
+  }
+  body:has(#hud:not(.hidden)) .objective,
+  body:has(#hud:not(.hidden)) .waypoint,
+  body:has(#hud:not(.hidden)) .mission {
+    max-width: 35vw;
+    width: 35vw;
+    min-width: 0;
+  }
+  body:has(#hud:not(.hidden)) .mission {
+    top: max(73px, calc(env(safe-area-inset-top) + 73px));
+    padding: 2px 7px;
+  }
+  body:has(#hud:not(.hidden)) .mission h2 {
+    font-size: 9px;
+  }
+  body:has(#hud:not(.hidden)) .mission .cta {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+  body:has(#hud:not(.hidden)) .waypoint {
+    top: max(43px, calc(env(safe-area-inset-top) + 43px));
+  }
+  body:has(#hud:not(.hidden)) .minimap {
+    height: clamp(72px, 17vh, 115px);
+    width: clamp(72px, 17vh, 115px);
+  }
+}
+@media (orientation: landscape) and (max-height: 340px) {
+  body:has(#hud:not(.hidden)) .mission {
+    top: max(70px, calc(env(safe-area-inset-top) + 70px));
+  }
+  body:has(#hud:not(.hidden)) .mission .meter,
+  body:has(#hud:not(.hidden)) .mission .cta {
+    display: none;
+  }
+}
