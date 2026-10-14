@@ -200,6 +200,20 @@ test('Directional avatar geometry rotates with the character and maintains valid
  assert.ok(Math.max(...zs)-Math.min(...zs)<1.01,'width rotated onto Z axis');
 });
 
+test('Skater detail and car render remain stable across modes and elevated harbor ground',()=>{
+ const rider={x:0,y:0,z:0,angle:0,vx:8,vy:0,vz:0,onGround:true,vehicle:'skate',skin:'default',character:'rylee',trickTimer:0};
+ const skating=new MeshBuilder();
+ buildCharacterMesh(skating,rider,1);
+ assert.ok(skating.vertices.length>1000,'skating rider is real 3D geometry');
+ assert.ok(skating.vertices.every(Number.isFinite),'all rider vertices and normals remain finite');
+ const driving=new MeshBuilder();
+ buildCharacterMesh(driving,{...rider,vehicle:'car'},1);
+ assert.equal(driving.vertices.length,0,'a seated driver cannot overlap the vehicle body as a standing avatar');
+ const source=readFileSync(new URL('../public/megarush/engine.js',import.meta.url),'utf8');
+ assert.match(source,/this\\.elevation\\(x0,z0\\)/,'the trail follows actual road height');
+ assert.match(source,/occupied\\?\\.color/,'occupied car keeps original paint on entry');
+});
+
 test('Landscape HUD, real analog touch control, and orientation fallback are integrated only into MegaRush',()=>{
  const root=new URL('../public/megarush/',import.meta.url);
  const html=readFileSync(new URL('index.html',root),'utf8');
