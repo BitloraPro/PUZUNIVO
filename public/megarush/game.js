@@ -387,7 +387,7 @@ document.querySelectorAll('[data-key]').forEach(b=>{const key=b.dataset.key;
  }else b.onclick=()=>pressAction(key);
 });
 $('landscape-btn').onclick=tryLandscape;
-function menu(){if(running){running=false;clearTimeout(jumpTimer);clearTimeout(climbTimer);keys.clear();analog.x=0;analog.z=0;resetStick();showPanel();}else if(session){running=true;$('panel').classList.add('hidden');$('hud').classList.remove('hidden');$('touch').classList.remove('hidden');$('mission').classList.remove('hidden');
+function menu(){if(running){heartbeat(true).catch(e=>flash('Pause save failed: '+e.message));running=false;clearTimeout(jumpTimer);clearTimeout(climbTimer);keys.clear();analog.x=0;analog.z=0;resetStick();showPanel();}else if(session){running=true;$('panel').classList.add('hidden');$('hud').classList.remove('hidden');$('touch').classList.remove('hidden');$('mission').classList.remove('hidden');
  last=performance.now();physicsCarry=0;if(!frameId)frameId=requestAnimationFrame(loop);}else showPanel();}
 btns.menu.onclick=menu;
 const chaseButton=$('play-chase');
