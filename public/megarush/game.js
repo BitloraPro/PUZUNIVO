@@ -75,6 +75,7 @@ async function start(mode='free'){
    player.harborChallenge=true;
    player.chaseActive=true;player.wantedState='chase';player.heat=challenge.heat;
    player.policeX=player.x-3;player.policeZ=player.z-20;
+   world.cameraPitch=Math.min(world.cameraPitch,.02); // Sunset boulevard chase framing
   }
  }
  // Fullscreen/orientation APIs may be refused; the rotate prompt remains as fallback.
@@ -274,6 +275,7 @@ function loop(timestamp){if(!running||!player||!world){frameId=0;return;}frameId
  $('orbs').textContent=pickupsReceived+'/'+boot.mission.targetCollectibles;$('hearts').textContent=player.hp;$('heat').textContent=player.chaseActive?'CHASE':player.wantedState==='search'?'SEARCH':'CLEAR';
  $('speed').textContent=Math.round(Math.hypot(player.vx,player.vz)*3.6);
  $('prompt').classList.toggle('pursuit',player.chaseActive);
+ $('world').dataset.pursuit=player.chaseActive?'active':'clear';
  const ratio=Math.min(1,pickupsReceived/boot.mission.targetCollectibles);
  const chaseDistance=Math.hypot(player.x-HARBOR_FINISH.x,player.z-HARBOR_FINISH.z);
  // A harbor chase must display harbor progress, not a misleading full shard bar.
