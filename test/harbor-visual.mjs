@@ -61,12 +61,14 @@ async function inspect(label, opts) {
         hudVisible: !hud?.classList.contains('hidden'),
         fps: document.getElementById('fps')?.textContent,
         centerElement: document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.id,
+        visibleActions: [...document.querySelectorAll('.actionpad button')].filter(button => getComputedStyle(button).display !== 'none').length,
       };
     });
     assert.ok(state.gl && state.width > 100 && state.height > 100, 'WebGL2 surface must render');
     assert.equal(state.mission, 'Escape the chase');
     assert.equal(state.hudVisible, true);
     assert.equal(state.centerElement, 'world', 'No giant mission card may cover the playable center of the scene');
+    assert.equal(state.visibleActions, 5, 'The gameplay HUD must show five reference-style touch controls');
     assert.match(state.distance || '', /\d+ m$/);
     assert.ok(state.health?.includes('♥'), 'HUD hearts must be connected to gameplay');
     assert.deepEqual(errors, [], 'Unhandled browser errors are not acceptable');
