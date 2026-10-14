@@ -701,7 +701,9 @@ export function updatePlayer(p,controls,world,dt){dt=Math.min(dt,.05);p.crashCoo
  // No officer follows a law-abiding skater. A distant escape leads to a
  // search, and then stand-down, rather than a permanent unearned pursuit.
  const officerDistance=Math.hypot(p.x-(p.policeX??-12),p.z-(p.policeZ??20));
- if(p.chaseActive&&officerDistance>48){p.searchTime+=dt;if(p.searchTime>7){p.chaseActive=false;p.wantedState='search';p.searchTime=0;p.heat=.28;}}
+ // The explicitly accepted Harbor Chase is a timed destination challenge:
+ // losing the police does not silently cancel its active mission.
+ if(p.chaseActive&&officerDistance>48&&!p.harborChallenge){p.searchTime+=dt;if(p.searchTime>7){p.chaseActive=false;p.wantedState='search';p.searchTime=0;p.heat=.28;}}
  else if(p.chaseActive)p.searchTime=0;
  else if(p.wantedState==='search'){
   p.searchTime+=dt;
