@@ -107,7 +107,7 @@ async function start(mode='chase'){
   if(challenge.chaseActive){
    player.harborChallenge=true;
    player.chaseActive=true;player.wantedState='chase';player.heat=challenge.heat;
-   player.policeX=player.x-3;player.policeZ=player.z-20;
+   player.policeX=challenge.policeX;player.policeZ=challenge.policeZ;
    world.cameraPitch=-.17; // Lower horizon reveals more sky and coastal skyline in third person
   }
  }
@@ -167,6 +167,10 @@ function pressAction(action){if(!running||!player)return;
   jumpTimer=setTimeout(()=>keys.delete('jump'),230);
  }
  else if(action==='climb'){
+  if(player.onGround&&player.vehicle!=='car'&&player.vehicle!=='swim'){
+   pressAction('skate');
+   return;
+  }
   keys.add('climb');clearTimeout(climbTimer);
   climbTimer=setTimeout(()=>keys.delete('climb'),600);
  }
@@ -392,7 +396,7 @@ if(chaseButton)chaseButton.onclick=()=>{
   heartbeat(true).then(()=>api('mission/chase/start',{sessionId:session})).then(result=>{
    if(result.chaseActive){
     player.chaseActive=true;player.heat=result.heat;player.wantedState='chase';
-    player.policeX=player.x-3;player.policeZ=player.z-20;
+    player.policeX=result.policeX;player.policeZ=result.policeZ;
    }
    if(result.harborReached)harborEscaped=true;
    menu();flash(result.harborReached?'🏁 Harbor already secured':'🚨 Harbor Chase activated — reach the waterfront!');
