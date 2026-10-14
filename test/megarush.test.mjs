@@ -172,6 +172,27 @@ test('MegaRush uses existing PUZUNIVO session, checks anti-duplicate purchases a
    'verified Harbor Chase can complete without mandatory side-quest shards');
  assert.equal((await request('/api/megarush/level/complete',{sessionId:nextRun.body.id})).status,409,
    'replaying the already completed run cannot award currency twice');
+
+ // Server-controlled opt-in Harbor Chase: no duplicate rewards or client-only mission.
+ const chaseRun=await request('/api/megarush/session/start',{character:'rylee'});
+ assert.equal(chaseRun.status,201);
+ assert.equal(chaseRun.body.incidentType,'');
+ assert.equal((await request('/api/megarush/mission/chase/start',{sessionId:'wrong-id'})).status,409);
+ const chaseStart=await request('/api/megarush/mission/chase/start',{sessionId:chaseRun.body.id});
+ assert.equal(chaseStart.status,200);
+ assert.equal(chaseStart.body.mission,'harbor_challenge');
+ assert.equal(chaseStart.body.chaseActive,true);
+ const duplicateMission=await request('/api/megarush/mission/chase/start',{sessionId:chaseRun.body.id});
+ assert.equal(duplicateMission.status,200);
+ assert.equal(duplicateMission.body.duplicate,true);
+ const savedMission=await request('/api/megarush/session/active');
+ assert.equal(savedMission.body.incidentType,'harbor_challenge');
+ assert.equal(savedMission.body.state.chaseActive,true);
+ assert.equal(savedMission.body.state.wantedState,'chase');
+ assert.equal((await request('/api/megarush/session/heartbeat',{
+   id:chaseRun.body.id,x:0,z:112,state:{...savedMission.body.state}
+ })).status,400,'harbor teleport is rejected');
+ assert.equal((await request('/api/megarush/level/complete',{sessionId:chaseRun.body.id})).status,409,'chase start alone never earns rewards');
 });
 
 test('Sprint increases traversal speed without altering normal movement and police collision damages once per cooldown',()=>{
