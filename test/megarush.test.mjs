@@ -383,6 +383,11 @@ test('Police and vehicle mesh include 3D wheels, windows, and emergency bar',()=
  assert.ok(normal.vertices.length>1500,'detailed car is real geometry');
  assert.ok(police.vertices.length>normal.vertices.length,'police emergency light assembly is real geometry');
  assert.ok(police.vertices.every(Number.isFinite));
+ const alternate=new MeshBuilder();
+ buildVehicleMesh(alternate,{x:1,z:10,police:true,flash:false});
+ assert.equal(alternate.vertices.length,police.vertices.length,'siren flash changes colors without modifying geometry');
+ assert.notDeepEqual(alternate.vertices,police.vertices,'police lightbar visibly changes with siren cycle');
+ assert.ok(alternate.vertices.every(Number.isFinite),'unlit emergency bar stays finite');
 });
 
 test('Native Android shell preserves shared Puzunivo identity and landscape only for MegaRush',()=>{
