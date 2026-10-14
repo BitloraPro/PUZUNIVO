@@ -610,6 +610,19 @@ test('Cinematic camera keeps 3D hero prominent without sacrificing fast chase vi
  }
 });
 
+test('Third-person rider streetwear geometry remains finite and deterministic',()=>{
+ const player={x:0,y:0,z:0,angle:.35,vx:1,vy:0,vz:8,onGround:true,vehicle:'skate',character:'rylee',skin:'default',trickTimer:0};
+ const first=new MeshBuilder(),second=new MeshBuilder();
+ buildCharacterMesh(first,player,1.25);
+ buildCharacterMesh(second,player,1.25);
+ assert.deepEqual(first.vertices,second.vertices,'rider appearance must not flicker across identical frames');
+ assert.ok(first.vertices.length>3000,'detailed character must remain an actual 3D mesh');
+ assert.ok(first.vertices.every(Number.isFinite),'rider vertices and normals must stay finite');
+ const facing=new MeshBuilder();
+ buildCharacterMesh(facing,{...player,angle:1.2},1.25);
+ assert.equal(facing.vertices.length,first.vertices.length,'turning retains one rig without duplicate meshes');
+});
+
 test('Port-world architectural details and rider lean remain physically generated WebGL meshes',()=>{
  const source=readFileSync(new URL('../public/megarush/engine.js',import.meta.url),'utf8');
  assert.match(source,/const craneX=83,craneZ=91/);
