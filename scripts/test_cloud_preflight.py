@@ -11,6 +11,8 @@ gate = root / "scripts/cloud_preflight.py"
 with tempfile.TemporaryDirectory() as folder:
     output = Path(folder) / "result"
     env = os.environ.copy()
+    # A smoke test must not write the real GitHub Actions job summary.
+    env.pop("GITHUB_STEP_SUMMARY", None)
     env.update({
         "GITHUB_OUTPUT": str(output),
         "UNITY_LICENSE": "",
