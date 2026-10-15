@@ -1,0 +1,53 @@
+# MEGARUSH — AUTHORITATIVE ONE-SHOT BUILD MISSION
+Version: 1.0 | Date: 2026-10-15 | Target repository: BitloraPro/PUZUNIVO (main)
+Scope: New Unity 6.3 LTS / Universal Render Pipeline game for Web, Android, iOS, Windows and future PlayStation 5. DO NOT rebuild the former PUZUNIVO puzzle app or the procedural low-poly browser game.
+
+## IMPORTANT PLATFORM TRUTH
+The user wants the supplied CINEMATIC GAMEPLAY VIDEO realized as a genuine playable 3D game, not a rendered poster, marketing website, old primitive cube/cartoony engine, static screenshot or prototype dressed as a finished release.
+Apper is currently a hosted REACT WEB APPLICATION environment. Apper cannot directly run Unity Editor, import and rig FBX characters, generate Unity .unity scenes, compile WebGL/Android/iOS/PS5 binaries, create Sony-approved PS5 packages, or run real device GPU testing. Apper's "build completed" confirms only the hosted React app, NEVER a Unity game build. Do not pretend otherwise.
+Unity gameplay SOURCE OF TRUTH = https://github.com/BitloraPro/PUZUNIVO, root directory, branch main. Do not copy an older Apper WebGL simulation back into Unity, or overwrite Unity source with generated webpages. The existing Apper connected database is separate and cannot substitute for Unity's authenticated game backend. All Unity work belongs in the SAME original Unity files, edit in place; no duplicates, no detached rewrites.
+
+## PROJECT TITLE, VISION AND REFERENCE
+Title: MEGARUSH — SUNSET HARBOR PURSUIT.
+Genre: third-person skateboarding action, explorable coastal-city police pursuit, vehicle interactions, procedural events plus authored missions.
+User's specific video reference: cinematic golden-hour coastal metropolis, detailed skater/hoverboard-rider in the foreground, convincing human proportions and animations; reflective/wet road with lane paint, palm-lined boulevards, believable concrete/glass buildings, neon accents, harbor/waterfront in distance; police sedan/SUV convoy, moving traffic, helicopter pursuing player; low-angle over-shoulder chase camera, high-quality lighting, haze and reflections. UI placed cleanly on-top of living 3D: top-left circular minimap, top-center "ESCAPE THE CHASE / REACH HARBOR", top-right hearts, authenticated XP and coins (never invented), left touch joystick, right Sprint/Jump/Trick/Vehicle/Swap and pause, clear objective waypoints. User's phone must NOT be blocked by a forced rotate screen; landscape is recommended, portrait can present legible menus with compact touch interface.
+The video is a quality acceptance reference, NOT a shippable asset file. Do not use or reproduce ripped commercial game assets. Do not claim frame-by-frame equality without side-by-side device screenshots showing the real runtime.
+
+## UNITY CROSS-PLATFORM BASE
+Unity 6.3 LTS, URP with scalable lighting/materials and texture LODs. Shared C# gameplay under Assets/MegaRush/Scripts; imported professional humanoid/vehicle/scene prefabs under Assets/MegaRush/Content and their license documentation. Use Input System abstraction for keyboard/mouse, controller and multi-touch. Never hardcode console SDK symbols into web/mobile.
+The Unity repository currently includes GameSession, PlayerMotor, ThirdPersonCamera, CrossPlatformInput, MobileControls, PolicePursuit, HarborFinish, DriveableVehicle, VehicleInteraction, HudPresenter, MobileQualityController and an Editor script to create the scene after mandatory authored prefabs are assigned. Treat these as source foundation only. An actual Unity Editor compile, prefab wiring, texture imports and playable scene are NOT yet verified.
+Real Web game requires Unity Web build output (loader.js, .wasm, .data, .framework.js) from the Unity Editor. Android native requires ARM64/IL2CPP/graphics profiling. iOS requires Apple build environment and signing. Windows desktop requires native build. PlayStation 5 requires Sony PlayStation Partners approval, licensed Unity console modules/Pro, SDK, devkit and certification. DO NOT advertise "PS5 playable" until that native build is authorized and tested.
+
+## REQUIRED ASSET CONTENT — HARD RELEASE GATE
+1. Rigged detailed rider model, skin/hair/clothing material fidelity, bone retargeting, idle/walk/run/skate/jump/fall/kickflip animator and root-motion policy; full skateboard with real trucks/wheels. Character must visually match level of reference, not a cuboid person.
+2. Fully modeled police sedan/SUV with proper doors, lights, wheels, glass, realistic material response; separate civilian cars and police helicopter with blades, searchlight, animated flight behavior and LOD assets.
+3. Coherent 3D coastal city: route-authored lanes, intersections, collision meshes, plausible building facades, marina promenade, pier, palm trees, street props, distant skyline, ocean and lighting probes. Harbor finish geometry physically reachable.
+4. PBR metallic/roughness/normal maps, sky/atmosphere, sun disk, fog, shadows, wet pavement response, tonemapping/bloom only where appropriate. Quality levels tuned for 60 FPS target where achievable on desktop and ~30/45/60 device-appropriate mobile tiers. Measure performance rather than invent performance claims.
+5. Properly cleared license/right-to-redistribute each source asset. Capture license, author, link and terms. Never import a randomly scraped model. When missing, say "Not sourced" and stop visual sign-off rather than replacing with cubes.
+6. Real animation: physics gameplay and rider animation state sync, wheel spin, board flipping, police lightbar blink, helicopter rotors, collision reaction.
+No placeholder "coming soon" panel is a playable game. No static reference image may be substituted for the real 3D viewport.
+
+## GAMEPLAY LOOP & RULES
+Launch -> Start Harbor Chase or Free Roam -> spawn as detailed skater -> third-person camera tracks real model -> correct analog acceleration/air-control/braking, collision with buildings/traffic -> police pursue only upon opting in to Harbor mission or an authentic in-game incident -> pursue via drivable road network, reinforce convoy/heli as heat rises -> distance HUD and street-level path guide -> when physically crossing actual harbor checkpoint, mark local challenge success and display result -> restart/free roam. 3 hearts, bounded crash damage cooldown, respawn, actual controller/gamepad input. Vehicle enter/exit in proximity with safe seat/exit positioning, camera target switched and gravity/collider state maintained. Only allow coin/XP gains when signed-in, authenticated server awards are implemented; no fake rewards and no unsafe reward endpoint trusting raw client achievements.
+Gameplay modes and physics must work on mobile touchscreen and desktop gamepad and mouse. Pause/resume on focus loss. Keep one gameplay state source rather than duplicate client and server authority.
+
+## UI & VISUAL ACCEPTANCE
+Emphasize world rather than HUD. Use professional game UI fonts and crisp iconography and safe-area padding. The screenshot from the player's phone must show the actual high-detail 3D player, road, city, police etc rather than large plain areas or a first-person car roof obscuring player. Over-the-shoulder camera, navigation marker, health, wanted level and live speed. "Swap Board", "Trick", "Jump", "Sprint" all have working handlers. Both portrait and landscape must allow starting the game (no blocking overlay). Controls must not overlap at 20:9 phones. UI fields that depend on account data stay absent or "not connected" until a real source exists.
+
+## BACKEND & APER RESPONSIBILITY
+Apper may deliver a real user/admin companion web product ONLY, but no fake 3D game render and no claimed Unity compilation. Its legitimate tasks: authentication/players/consent, admin mission catalog and moderation, support tickets, cosmetic inventory catalogue, approved analytics ingestion, verification workflow, and finally a Unity Web build hosting/launch UI when a valid Unity Web build has actually been deployed. No new fake metrics or seeded balances. Separate developer/internal build status from player-facing service status.
+Unity client communicates with authenticated API using secure TLS, versioned schema, event IDs, refresh/session handling, rate limits, server checks on mission completion, cross-platform account linking. No secret API credentials in client or GitHub. Do not migrate or delete Apper's existing live cloud records implicitly: changes affecting old hosted records require explicit scoped approval and export/backup.
+
+## BUILD, TEST, HANDOFF
+- Phase A: import licensed 3D assets, wire Unity inspector and produce a playable Unity Editor scene with real models. No release without assets.
+- Phase B: movement/chase/camera/mission/vehicle/animation/hud, play-mode and edit-mode tests, record 60-second gameplay video captured from engine, reference visual comparison.
+- Phase C: Web/Android/Windows actual builds + web host + mobile touch and GPU QA. Document build IDs, device, fps, crashes, console errors and screenshots. iOS only with signing.
+- Phase D: real backend/admin progression, validation, logs, authorized economy and cross-device saves. Ensure offline practice is visibly distinguished from cloud rewards.
+- Phase E: PS5 after Sony approval, devkit, Unity console platform package, compliance and certification.
+RELEASE CHECKLIST: no blocking boot loader, reference camera/lighting fidelity captured on real device, no missing required content, no fake XP/coins, coherent harbor route, input on browser/phone/controller, healthy framerate, no data-loss migration, reproducible builds, correct legal licensing, PS5 status truthful.
+
+## CREDIT-SAVING INSTRUCTION TO APER
+This document is a SINGLE authoritative brief. Do not trigger repeated Apper generation, mock builds, re-theming or trial-and-error deployments to substitute for Unity development. The user's priority is the genuine 3D game, not a glossy webpage. Before any Apper build, require a genuine exported Unity Web build URL or verified asset package; then write the complete companion/hosting integration in ONE batch and run ONE build. Stop at blocked prerequisites instead of fabricating a "complete" game. Keep all technical status transparent.
+
+## VERIFIED STATUS AT HANDOFF
+GitHub root is a fresh Unity 6.3 architecture with C# game scripts. GitHub source structure checks passed. This does NOT mean a Unity runtime, commercial reference-quality art, Unity Web export, Android/iOS package, PS5 package, live cross-platform API, or device GPU QA exists. As of this handoff, the game is NOT complete and the old Apper WebGL visual game is explicitly obsolete.
