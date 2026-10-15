@@ -1,0 +1,64 @@
+name: MegaRush — build playable browser game
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'playable-web/**'
+      - 'start-playable-web.sh'
+      - '.github/workflows/playable-web.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    name: Compile real Three.js browser game and run source tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Three.js/Vite
+        working-directory: playable-web
+        run: npm install --no-audit --no-fund
+      - name: Test playable gameplay wiring and JavaScript syntax
+        working-directory: playable-web
+        run: npm run check
+      - name: Compile browser-playable WebGL assets
+        working-directory: playable-web
+        run: npm run build
+      - name: Upload playable browser game
+        uses: actions/upload-artifact@v4
+        with:
+          name: MegaRush-Web-Playable
+          path: playable-web/dist/
+          if-no-files-found: error
+          retention-days: 30
+
+  pages:
+    name: Publish browser game (requires GitHub Pages enabled in repo settings)
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    continue-on-error: true
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install and build
+        working-directory: playable-web
+        run: npm install --no-audit --no-fund && npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: playable-web/dist
+      - uses: actions/deploy-pages@v4
+        id: deploy
