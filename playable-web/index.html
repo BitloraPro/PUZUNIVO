@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#101629">
+  <meta name="description" content="MegaRush: playable coastal sunset police-chase browser game, WebGL2 and touch controls.">
+  <title>MEGARUSH — Sunset Harbor Pursuit</title>
+</head>
+<body>
+  <main id="game" aria-label="MegaRush 3D playable game">
+    <canvas id="scene" aria-label="Live three dimensional harbor chase environment"></canvas>
+    <div class="skyglow" aria-hidden="true"></div>
+    <div id="startPanel" class="start-panel">
+      <div class="start-card">
+        <div class="eyebrow">PUZUNIVO PRESENTS • PLAYABLE WEB BUILD</div>
+        <h1>MEGA<span>RUSH</span></h1>
+        <p class="tagline">SUNSET HARBOR PURSUIT</p>
+        <div class="divider-accent"></div>
+        <h2 id="menuTitle">OWN THE STREETS.</h2>
+        <p id="menuText">Race through a living waterfront city. Dodge traffic, outsmart police cars, and reach the Harbor before your three hearts are gone.</p>
+        <button id="chaseButton" class="action-primary">🚨 START HARBOR CHASE <b>➜</b></button>
+        <button id="roamButton" class="action-secondary">🛹 FREE ROAM</button>
+        <div class="start-caption">Mobile joystick &amp; action controls · WASD / Arrows · Space jump · Shift sprint · K trick · V car</div>
+        <p class="build-honesty">Live 3D browser gameplay • free prototype • not PS5 or cinematic-reference final art</p>
+      </div>
+      <div class="start-aside"><div class="aside-lines">HARBOR<br>BOULEVARD <em>01 / 01</em></div></div>
+    </div>
+    <section id="hud" class="hud hidden" aria-label="Live gameplay controls and status">
+      <div class="top-row">
+        <div class="radar">
+          <canvas id="radar" width="152" height="152" aria-label="Live player and pursuit map"></canvas>
+          <span class="radar-n">N</span><small>SUNSET CITY</small>
+        </div>
+        <div class="objective">
+          <div id="chaseLabel" class="objective-kicker">● ACTIVE PURSUIT</div>
+          <strong id="objectiveTitle">ESCAPE THE CHASE</strong>
+          <span id="distance">↗ 150 M · REACH HARBOR</span>
+        </div>
+        <div class="hud-right">
+          <div class="health" id="health" aria-label="Three hearts">♥ ♥ ♥</div>
+          <div class="hud-counters"><span id="wanted">🚨 CHASE</span><span>COINS <b>—</b></span><span>XP <b>—</b></span></div>
+        </div>
+      </div>
+      <div class="speed"><strong id="speed">0</strong><span>KM/H</span></div>
+      <div class="controls">
+        <div id="joystick" class="joystick" aria-label="Move joystick" role="application" tabindex="0">
+          <div class="joystick-rings"></div><div id="stick" class="stick"></div>
+          <span>MOVE</span>
+        </div>
+        <div class="actions">
+          <button id="swap" aria-label="Swap board and walking">🛹 <span>BOARD</span></button>
+          <button id="car" aria-label="Enter or leave vehicle">🚘 <span>VEHICLE</span></button>
+          <button id="trick" class="gold" aria-label="Perform skateboard trick">✧ <span>TRICK</span></button>
+          <button id="jump" aria-label="Hold to jump">↑ <span>JUMP</span></button>
+          <button id="sprint" class="turq" aria-label="Hold to sprint">➤ <span>SPRINT</span></button>
+          <button id="pause" aria-label="Pause game">Ⅱ <span>PAUSE</span></button>
+        </div>
+      </div>
+      <div class="notice" id="notice" role="status">Reach the Harbor checkpoint!</div>
+      <div class="bottom-honesty">FREE LOCAL PRACTICE · NO CLOUD COINS/XP</div>
+    </section>
+    <div id="loadIndicator" class="loading">Loading 3D world &amp; licensed models…</div>
+    <div id="fatal" class="fatal hidden"><strong>Graphics unavailable</strong><p id="fatalMessage"></p></div>
+    <a class="credits" href="https://github.com/BitloraPro/PUZUNIVO/blob/main/playable-web/ASSET_CREDITS.md" target="_blank" rel="noopener noreferrer" aria-label="3D model credits">ASSET CREDITS</a>
+  </main>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
