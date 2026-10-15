@@ -17,6 +17,7 @@ namespace MegaRush.Core
         [SerializeField] private PlayerMotor rider;
         [SerializeField] private ThirdPersonCamera cameraRig;
         [SerializeField] private PolicePursuit pursuer;
+        [SerializeField] private PursuitHelicopter helicopter;
         [SerializeField] private HarborFinish harbor;
         [SerializeField] private HudPresenter hud;
         [SerializeField] private DriveableVehicle trafficCar;
@@ -30,13 +31,15 @@ namespace MegaRush.Core
         public Vector3 HarborPosition => harbor != null ? harbor.transform.position : Vector3.zero;
 
         public void Configure(CrossPlatformInput input, PlayerMotor player,
-            ThirdPersonCamera camera, PolicePursuit police, HarborFinish finish,
+            ThirdPersonCamera camera, PolicePursuit police,
+            PursuitHelicopter airUnit, HarborFinish finish,
             HudPresenter ui, DriveableVehicle car)
         {
             controls = input;
             rider = player;
             cameraRig = camera;
             pursuer = police;
+            helicopter = airUnit;
             harbor = finish;
             hud = ui;
             trafficCar = car;
@@ -50,7 +53,7 @@ namespace MegaRush.Core
         {
             if (initialized) return;
             if (controls == null || rider == null || cameraRig == null ||
-                pursuer == null || harbor == null || hud == null)
+                pursuer == null || helicopter == null || harbor == null || hud == null)
             {
                 Debug.LogError("MegaRush scene cannot start: approved scene bindings are incomplete.");
                 enabled = false;
@@ -62,6 +65,7 @@ namespace MegaRush.Core
             rider.KnockedOut += OnPlayerKnockedOut;
             pursuer.Configure(rider);
             pursuer.Activate(false);
+            helicopter.Configure(rider.transform);
             harbor.SetSession(this);
             cameraRig.Follow(rider.transform, controls);
             vehicleInteraction = gameObject.AddComponent<VehicleInteraction>();
@@ -88,6 +92,7 @@ namespace MegaRush.Core
             cameraRig.Follow(rider.transform, controls);
             pursuer.transform.position = spawnPoint - Vector3.forward * 17f + Vector3.right * 2f;
             pursuer.Activate(chase);
+            helicopter.Activate(chase);
             State = chase ? GameMode.Chase : GameMode.FreeRoam;
             Status = chase ? "ESCAPE THE CHASE • REACH THE HARBOR" : "FREE ROAM • EXPLORE THE CITY";
             Time.timeScale = 1f;
@@ -98,6 +103,7 @@ namespace MegaRush.Core
             if (State != GameMode.Chase || player != rider) return;
             State = GameMode.Escaped;
             pursuer.Activate(false);
+            helicopter.Activate(false);
             Status = "HARBOR REACHED — PRACTICE ESCAPE COMPLETED";
             // No fake XP, coins, transactions or cloud save.
         }
@@ -107,6 +113,7 @@ namespace MegaRush.Core
             if (State != GameMode.Chase && State != GameMode.FreeRoam) return;
             State = GameMode.Crashed;
             pursuer.Activate(false);
+            helicopter.Activate(false);
             Status = "CHASE FAILED — FREE RESTART AVAILABLE";
         }
 

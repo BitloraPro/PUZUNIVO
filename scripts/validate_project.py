@@ -14,6 +14,7 @@ required = (
     "Assets/MegaRush/Scripts/Input/MobileControls.cs",
     "Assets/MegaRush/Scripts/Camera/ThirdPersonCamera.cs",
     "Assets/MegaRush/Scripts/Police/PolicePursuit.cs",
+    "Assets/MegaRush/Scripts/Police/PursuitHelicopter.cs",
     "Assets/MegaRush/Scripts/Missions/HarborFinish.cs",
     "Assets/MegaRush/Scripts/Vehicle/VehicleInteraction.cs",
     "Assets/MegaRush/Scripts/Vehicle/DriveableVehicle.cs",
@@ -72,3 +73,11 @@ print(
     "PASS: Unity project/source architecture and fail-closed Web/Android/Windows build commands. "
     "NOT TESTED: Unity compile, assets, gameplay, rendering, mobile fps, actual packages or PS5."
 )
+
+air = (root / "Assets/MegaRush/Scripts/Police/PursuitHelicopter.cs").read_text()
+assert "class PursuitHelicopter" in air
+assert "mainRotor.Rotate" in air and "searchlightPivot.rotation" in air
+assert "GameObject.CreatePrimitive" not in air
+assert "helicopter.Activate(chase)" in session
+assert "helicopter.Activate(false)" in session
+assert "session.Configure(input, motor, camera, police, helicopter" in scene

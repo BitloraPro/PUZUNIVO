@@ -32,3 +32,5 @@ Use imported modular city blocks, photogrammetry-grade PBR asphalt/sidewalks, li
 
 ## Explicit non-goals for the foundation commit
 Do not claim reference-video visual parity, real production content, shipped binary, validated PS5 package, cloud-backed XP, or real Android performance until evidence exists.
+## Pursuit helicopter source update (2026-10-15)
+Imported helicopter rig is now driven by `PursuitHelicopter`: bounded airborne tracking orbit, live chase activation/deactivation, actual rotor transform rotation and optional authored spotlight tracking the rider. Requires a licensed real 3D helicopter prefab and inspector-assigned rotor/spotlight references; no GPU animation or finished reference-quality video has been verified.

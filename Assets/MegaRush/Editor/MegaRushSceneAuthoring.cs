@@ -81,6 +81,7 @@ namespace MegaRush.Editor
             var carObject = Instantiate(manifest.policeCarPrefab, "Police Pursuer", new Vector3(2, 0, -90));
             var police = carObject.GetComponent<PolicePursuit>() ?? carObject.AddComponent<PolicePursuit>();
             var heli = Instantiate(manifest.policeHelicopterPrefab, "Pursuit Helicopter", new Vector3(-28, 38, -70));
+            var helicopter = heli.GetComponent<PursuitHelicopter>() ?? heli.AddComponent<PursuitHelicopter>();
 
             var trafficObject = Instantiate(manifest.drivableTrafficCarPrefab, "Traffic Car", new Vector3(8, 0, -58));
             var traffic = trafficObject.GetComponent<DriveableVehicle>() ?? trafficObject.AddComponent<DriveableVehicle>();
@@ -110,7 +111,7 @@ namespace MegaRush.Editor
             var input = runtime.AddComponent<CrossPlatformInput>();
             var session = runtime.AddComponent<GameSession>();
             runtime.AddComponent<MobileQualityController>();
-            session.Configure(input, motor, camera, police, finish, hud, traffic);
+            session.Configure(input, motor, camera, police, helicopter, finish, hud, traffic);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
