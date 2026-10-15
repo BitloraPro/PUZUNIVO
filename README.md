@@ -16,17 +16,17 @@ A new 3D production project, no dependency on the legacy PUZUNIVO puzzle backend
 ## Game vision
 Original third-person skateboard police pursuit in a sunset coastal city. A detailed humanoid rider, realistic surfacing, busy traffic, police convoy and helicopter, reflective Harbor Boulevard, palm trees, docks, vehicle swaps, tricks, checkpoint and cinematic camera. The supplied user reference video is a **visual acceptance target**, not an asset we copy or fake with a screenshot.
 
-## How to begin on a Windows PC
+## No-PC cloud production pipeline
 
-1. Install **Unity Hub** and Unity **6000.3.0f1**; add Windows, Web and Android platform modules as needed.
-2. Clone this repository and **open its root folder as a Unity project**. It is NOT a Node.js web server and has no `npm start`.
-3. Obtain properly licensed production-ready meshes, PBR materials, rigged animations, environmental geometry, vehicle assets and audio per [ASSET_REQUIREMENTS.md](Docs/ASSET_REQUIREMENTS.md).
-4. Drag imported prefab references into `MegaRushAssetManifest` (create with menu `MegaRush > Create/Select Asset Manifest`).
-5. Use `MegaRush > Create Harbor Chase Scene`. Scene authoring **refuses** missing core assets; it will not quietly create another primitive-car cartoon.
-6. Assign/verify the imported character's CharacterController, colliders, Animator, steering/wheels and HUD button references. Open the generated scene and play.
-7. Build Web, Android, Windows in Unity after visual QA. No build artifact or APK is included in this repo.
+**No Unity-capable PC or local Unity Hub installation is required for source development.** The repo now includes a manual GitHub Actions workflow that can request a cloud **WebGL, Android or Windows** Unity build when verified content and an authorized Unity license are ready.
 
-See [architecture](Docs/ARCHITECTURE.md), [visual acceptance](Docs/REFERENCE_ACCEPTANCE.md), and [roadmap](Docs/DELIVERY_ROADMAP.md).
+1. The source stays in this GitHub repo and is edited remotely.
+2. Real artist-authored 3D assets (correct commercial licenses), a serialized Unity scene and asset manifest must exist before compilation; old procedural cube models are prohibited.
+3. Unity license activation and authorization are separate one-time account-owner operations; **never provide passwords in chat, files or public repository commits**. Unity Personal licensing requires activation through Unity Hub, which can be performed on a remote graphical/cloud workstation, not the user's phone. A cloud build will not bypass this rule.
+4. After prerequisites, open [GitHub Actions](https://github.com/BitloraPro/PUZUNIVO/actions/workflows/unity-cloud-build.yml), choose **Run workflow** and platform `WebGL`, `Android` or `StandaloneWindows64`. The preflight checks the files and presence of license secrets **without printing their contents**. If anything is missing, expensive Unity compilation is skipped.
+5. Compiled packages appear under the GitHub Actions run's **Artifacts** only when Unity genuinely completes the selected build.
+
+This pipeline is **prepared, not proof that a playable release exists**. For exact prerequisites and optional headless commands see [Cloud guide](Docs/NO_PC_CLOUD_WORKFLOW.md), [build guide](Docs/UNITY_BUILD_GUIDE.md), [asset checklist](Docs/ASSET_REQUIREMENTS.md) and [full master brief](Docs/MEGARUSH_UNITY_ONE_SHOT_MASTER_BRIEF.md).
 
 ## What's implemented in source
 State machine for menu/free roam/chase/win/crash, cross-device input arbitration, touch joystick and buttons, collision-aware third-person camera, physics-based character locomotion, contextual skateboard jump/trick, police AI/health with cooldown, harbor finish trigger, vehicle enter/exit, and live in-session HUD. These are Unity C# **sources only**, not evidence of runtime execution.

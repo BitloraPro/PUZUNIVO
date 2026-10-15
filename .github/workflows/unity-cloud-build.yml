@@ -1,0 +1,81 @@
+name: MegaRush Unity cloud build (no local PC)
+run-name: "MegaRush cloud: ${{ inputs.platform }}"
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Target platform (Unity license and approved assets required)
+        required: true
+        default: WebGL
+        type: choice
+        options:
+          - WebGL
+          - Android
+          - StandaloneWindows64
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unity-cloud-${{ github.ref }}-${{ inputs.platform }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Check Unity license and real 3D scene prerequisites
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.requirements.outputs.ready }}
+    steps:
+      - name: Checkout the real Unity project (including Git LFS references)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Validate source and print missing prerequisites
+        id: requirements
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          BUILD_PLATFORM: ${{ inputs.platform }}
+        run: python3 scripts/cloud_preflight.py
+
+  build:
+    name: Actual Unity ${{ inputs.platform }} compilation
+    needs: preflight
+    if: needs.preflight.outputs.ready == 'true'
+    runs-on: ${{ inputs.platform == 'StandaloneWindows64' && 'windows-latest' || 'ubuntu-latest' }}
+    timeout-minutes: 150
+    steps:
+      - name: Checkout including legally licensed LFS content
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Cache imported Unity packages
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-${{ inputs.platform }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-${{ runner.os }}-${{ inputs.platform }}-
+      - name: Unity Editor — compile the actual approved scene
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: auto
+          projectPath: .
+          targetPlatform: ${{ inputs.platform }}
+          buildsPath: Builds
+          buildMethod: ${{ inputs.platform == 'WebGL' && 'MegaRush.Editor.MegaRushProductionBuild.BuildWeb' || inputs.platform == 'Android' && 'MegaRush.Editor.MegaRushProductionBuild.BuildAndroid' || 'MegaRush.Editor.MegaRushProductionBuild.BuildWindows' }}
+      - name: Upload compiled build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MegaRush-${{ inputs.platform }}-${{ github.run_number }}
+          path: Builds/
+          if-no-files-found: error
+          retention-days: 7

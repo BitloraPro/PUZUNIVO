@@ -21,6 +21,9 @@ required = (
     "Assets/MegaRush/Editor/MegaRushSceneAuthoring.cs",
     "Assets/MegaRush/Editor/MegaRushProductionBuild.cs",
     "Docs/MEGARUSH_UNITY_ONE_SHOT_MASTER_BRIEF.md",
+    "Docs/NO_PC_CLOUD_WORKFLOW.md",
+    "scripts/cloud_preflight.py",
+    ".github/workflows/unity-cloud-build.yml",
 )
 for pathname in required:
     assert (root / pathname).is_file(), f"Required Unity source missing: {pathname}"

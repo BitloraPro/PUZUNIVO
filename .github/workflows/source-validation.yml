@@ -13,6 +13,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify fresh Unity project structure
         run: python3 scripts/validate_project.py
+      - name: Validate no-PC cloud preflight safely blocks missing licenses and 3D scene
+        run: python3 scripts/test_cloud_preflight.py
+      - name: Validate cloud workflow YAML parses
+        run: |
+          python3 -m pip install --disable-pip-version-check PyYAML
+          python3 -c "import yaml; x=yaml.safe_load(open('.github/workflows/unity-cloud-build.yml')); assert 'jobs' in x; assert 'preflight' in x['jobs']; assert 'build' in x['jobs']"
       - name: Explicitly report build status
         run: |
           echo "Unity Editor, assets and Sony SDK are NOT on this runner."
